@@ -37,7 +37,7 @@ def forward_with_loss(nets, batch_data, args, is_train=True):
     return pred, err
 
 
-def accuracy(batch_data, pred, args):
+def accuracy(batch_data, pred):
     (imgs, segs, infos) = batch_data
     pred_ = np.argmax(pred.data.cpu().numpy(), axis=1)
     segs_ = segs.numpy()
@@ -105,7 +105,7 @@ def train(nets, loader, optimizers, history, epoch, args):
 
         # calculate accuracy, and display
         if i % args.disp_iter == 0:
-            acc, _ = accuracy(batch_data, pred, args)
+            acc, _ = accuracy(batch_data, pred)
 
             print('[{}]: Epoch: {}, Iter: {}, lr_encoder: {}, lr_decoder: {}, '
                   'Accurarcy: {:4.2f}%, Loss: {}'
@@ -135,7 +135,7 @@ def evaluate(nets, loader, history, epoch, args):
         print('[Eval] iter {}, loss: {}'.format(i, err.data[0]))
 
         # calculate accuracy
-        acc, pix = accuracy(batch_data, pred, args)
+        acc, pix = accuracy(batch_data, pred)
         acc_meter.update(acc, pix)
 
         # visualization
