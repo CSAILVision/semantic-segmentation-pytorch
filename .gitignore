@@ -1,0 +1,6 @@
+__init__.py
+*.pyc
+
+ckpt/
+vis/
+log/
