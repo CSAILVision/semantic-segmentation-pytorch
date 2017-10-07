@@ -1,6 +1,12 @@
 # Semantic Segmentation on MIT ADE20K dataset in PyTorch
 
-Supported models:
+This is a PyTorch implementation of semantic segmentation models on MIT ADE20K scene parsing dataset.
+
+Follow the link below to find the repository for our dataset and implementations on Caffe and Torch7:
+
+https://github.com/CSAILVision/sceneparsing
+
+## Supported models:
 - VGG16-dilated8
 - VGG19-dilated8
 - ResNet34-dilated16
