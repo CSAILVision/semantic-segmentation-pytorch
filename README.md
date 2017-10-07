@@ -1,5 +1,4 @@
-# semantic-segmentation-pytorch
-Pytorch implementation for semantic segmentation/scene parsing on MIT ADE20K dataset.
+# Semantic Segmentation on MIT ADE20K dataset in PyTorch
 
 Supported models:
 - VGG16-dilated8
