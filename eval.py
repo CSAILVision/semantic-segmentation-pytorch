@@ -22,7 +22,7 @@ def forward_multiscale(nets, batch_data, args):
     (imgs, segs, infos) = batch_data
 
     segSize = (segs.size(1), segs.size(2))
-    pred = torch.zeros(imgs.size(0), segs.size(0), segs.size(1), segs.size(2))
+    pred = torch.zeros(imgs.size(0), args.segDepth, segs.size(1), segs.size(2))
     pred = Variable(pred, volatile=True).cuda()
 
     for scale in args.scales:
