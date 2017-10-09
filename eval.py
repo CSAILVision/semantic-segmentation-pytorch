@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from scipy.io import loadmat
-from scipy.misc import imread, imresize, imsave
+from scipy.misc import imsave
 from scipy.ndimage import zoom
 # Our libs
 from dataset import Dataset
@@ -157,11 +157,11 @@ if __name__ == '__main__':
                         help="a name for identifying the model to load")
     parser.add_argument('--suffix', default='_best.pth',
                         help="which snapshot to load")
-    parser.add_argument('--arch_encoder', default='vgg16_dilated',
+    parser.add_argument('--arch_encoder', default='resnet34_dilated8',
                         help="architecture of net_encoder")
     parser.add_argument('--arch_decoder', default='c1bilinear',
                         help="architecture of net_decoder")
-    parser.add_argument('--fc_dim', default=4096, type=int,
+    parser.add_argument('--fc_dim', default=512, type=int,
                         help='number of features between encoder and decoder')
 
     # Path related arguments
