@@ -7,12 +7,12 @@ Follow the link below to find the repository for our dataset and implementations
 https://github.com/CSAILVision/sceneparsing
 
 ## Supported models:
-- VGG16-dilated8
-- VGG19-dilated8
-- ResNet34-dilated16
-- ResNet34-dilated8
-- ResNet50-dilated16
-- ResNet50-dilated8
+- vgg16_dilated
+- vgg19_dilated
+- resnet34_dilated16
+- resnet34-dilated8
+- resnet50-dilated16
+- resnet50-dilated8
 
 
 ## Training
@@ -26,7 +26,7 @@ chmod +x download_ADE20K.sh
 python train.py
 ```
 
-3. Input arguments: see full input arguments ```python train.py -h ```
+3. Input arguments: (see full input arguments via ```python train.py -h ```)
 ```bash
 usage: train.py [-h] [--id ID] [--arch_encoder ARCH_ENCODER]
                 [--arch_decoder ARCH_DECODER]
@@ -49,11 +49,12 @@ usage: train.py [-h] [--id ID] [--arch_encoder ARCH_ENCODER]
 
 
 ## Evaluation
-1. Evaluate a trained network:
+1. Evaluate a trained network on the validation set:
 ```bash
 python eval.py --id MODEL_ID
 ```
-2. Input arguments: see full input arguments ```python eval.py -h ```
+
+2. Input arguments: (see full input arguments via ```python eval.py -h ```)
 ```bash
 usage: eval.py [-h] --id ID [--suffix SUFFIX] [--arch_encoder ARCH_ENCODER]
                [--arch_decoder ARCH_DECODER] [--fc_dim FC_DIM]
@@ -62,6 +63,21 @@ usage: eval.py [-h] --id ID [--suffix SUFFIX] [--arch_encoder ARCH_ENCODER]
                [--batch_size BATCH_SIZE] [--imgSize IMGSIZE]
                [--segSize SEGSIZE] [--segDepth SEGDEPTH] [--ckpt CKPT]
                [--visualize VISUALIZE] [--result RESULT]
+```
+
+
+## Test/Inference
+1. Do inference on a single image:
+```bash
+python test.py --id MODEL_ID --test_img TEST_IMG
+```
+2. Input arguments: (see full input arguments via ```python test.py -h ```)
+```bash
+usage: test.py [-h] --id ID [--suffix SUFFIX] [--arch_encoder ARCH_ENCODER]
+               [--arch_decoder ARCH_DECODER] [--fc_dim FC_DIM] --test_img
+               TEST_IMG [--num_val NUM_VAL] [--batch_size BATCH_SIZE]
+               [--imgSize IMGSIZE] [--segSize SEGSIZE] [--segDepth SEGDEPTH]
+               [--ckpt CKPT] [--visualize VISUALIZE] [--result RESULT]
 ```
 
 ## Reference
