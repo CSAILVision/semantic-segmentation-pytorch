@@ -10,9 +10,9 @@ https://github.com/CSAILVision/sceneparsing
 - vgg16_dilated
 - vgg19_dilated
 - resnet34_dilated16
-- resnet34-dilated8
-- resnet50-dilated16
-- resnet50-dilated8
+- resnet34_dilated8
+- resnet50_dilated16
+- resnet50_dilated8
 
 
 ## Training
