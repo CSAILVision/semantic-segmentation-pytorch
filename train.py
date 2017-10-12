@@ -1,8 +1,8 @@
 # System libs
 import os
+import time
 # import math
 import random
-import datetime
 import argparse
 # Numerical libs
 import numpy as np
@@ -83,6 +83,9 @@ def visualize(batch_data, pred, args):
 
 # train one epoch
 def train(nets, loader, optimizers, history, epoch, args):
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+
     # switch to train mode
     for net in nets:
         if not args.fix_bn:
@@ -91,7 +94,9 @@ def train(nets, loader, optimizers, history, epoch, args):
             net.eval()
 
     # main loop
+    tic = time.time()
     for i, batch_data in enumerate(loader):
+        data_time.update(time.time() - tic)
         for net in nets:
             net.zero_grad()
 
@@ -103,18 +108,24 @@ def train(nets, loader, optimizers, history, epoch, args):
         for optimizer in optimizers:
             optimizer.step()
 
+        # measure elapsed time
+        batch_time.update(time.time() - tic)
+        tic = time.time()
+
         # calculate accuracy, and display
         if i % args.disp_iter == 0:
             acc, _ = accuracy(batch_data, pred)
 
-            print('[{}]: Epoch: {}, Iter: {}, lr_encoder: {}, lr_decoder: {}, '
+            print('Epoch: [{}][{}/{}], Time: {:.2f}, Data: {:.2f}, '
+                  'lr_encoder: {}, lr_decoder: {}, '
                   'Accurarcy: {:4.2f}%, Loss: {}'
-                  .format(datetime.datetime.now()
-                          .strftime("%Y-%m-%d %H:%M:%S"),
-                          epoch, i, args.lr_encoder, args.lr_decoder,
+                  .format(epoch, i, args.epoch_iters,
+                          batch_time.average(), data_time.average(),
+                          args.lr_encoder, args.lr_decoder,
                           acc*100, err.data[0]))
-            absolute_iter = (epoch - 1) * args.epoch_iters + i
-            history['train']['iter'].append(absolute_iter)
+
+            fractional_epoch = epoch - 1 + 1. * i / args.epoch_iters
+            history['train']['epoch'].append(fractional_epoch)
             history['train']['err'].append(err.data[0])
             history['train']['acc'].append(acc)
 
@@ -141,8 +152,7 @@ def evaluate(nets, loader, history, epoch, args):
         # visualization
         visualize(batch_data, pred, args)
 
-    absolute_iter = epoch * args.epoch_iters
-    history['val']['iter'].append(absolute_iter)
+    history['val']['epoch'].append(epoch)
     history['val']['err'].append(loss_meter.average())
     history['val']['acc'].append(acc_meter.average())
     print('[Eval Summary] Epoch: {}, Loss: {}, Accurarcy: {:4.2f}%'
@@ -152,18 +162,18 @@ def evaluate(nets, loader, history, epoch, args):
     if epoch > 0:
         print('Plotting loss figure...')
         fig = plt.figure()
-        plt.plot(history['train']['iter'], history['train']['err'],
+        plt.plot(history['train']['epoch'], history['train']['err'],
                  color='b', label='training')
-        plt.plot(history['val']['iter'], history['val']['err'],
+        plt.plot(history['val']['epoch'], history['val']['err'],
                  color='c', label='validation')
         plt.legend()
         fig.savefig('{}/loss.png'.format(args.ckpt), dpi=200)
         plt.close('all')
 
         fig = plt.figure()
-        plt.plot(history['train']['iter'], history['train']['acc'],
+        plt.plot(history['train']['epoch'], history['train']['acc'],
                  color='b', label='training')
-        plt.plot(history['val']['iter'], history['val']['acc'],
+        plt.plot(history['val']['epoch'], history['val']['acc'],
                  color='c', label='validation')
         plt.legend()
         fig.savefig('{}/accuracy.png'.format(args.ckpt), dpi=200)
@@ -270,7 +280,7 @@ def main(args):
     optimizers = create_optimizers(nets, args)
 
     # Main loop
-    history = {split: {'iter': [], 'err': [], 'acc': []}
+    history = {split: {'epoch': [], 'err': [], 'acc': []}
                for split in ('train', 'val')}
     # initial eval
     evaluate(nets, loader_val, history, 0, args)
@@ -310,9 +320,9 @@ if __name__ == '__main__':
 
     # Path related arguments
     parser.add_argument('--list_train',
-                        default='data/ADE20K_object150_train.txt')
+                        default='./data/ADE20K_object150_train.txt')
     parser.add_argument('--list_val',
-                        default='data/ADE20K_object150_val.txt')
+                        default='./data/ADE20K_object150_val.txt')
     parser.add_argument('--root_img',
                         default='./data/ADEChallengeData2016/images')
     parser.add_argument('--root_seg',
