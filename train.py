@@ -14,7 +14,7 @@ from scipy.misc import imresize, imsave
 # Our libs
 from dataset import Dataset
 from models import ModelBuilder
-from utils import AverageMeter, colorEncode
+from utils import AverageMeter, colorEncode, accuracy
 
 import matplotlib
 matplotlib.use('Agg')
@@ -35,15 +35,6 @@ def forward_with_loss(nets, batch_data, args, is_train=True):
     pred = net_decoder(net_encoder(input_img))
     err = crit(pred, label_seg)
     return pred, err
-
-
-def accuracy(batch_data, pred):
-    (imgs, segs, infos) = batch_data
-    pred_ = np.argmax(pred.data.cpu().numpy(), axis=1)
-    segs_ = segs.numpy()
-    valid_ = (segs_ >= 0)
-    acc = 1.0 * np.sum(valid_ * (pred_ == segs_)) / np.sum(valid_)
-    return acc, np.sum(valid_)
 
 
 def visualize(batch_data, pred, args):
@@ -350,7 +341,7 @@ if __name__ == '__main__':
     # Data related arguments
     parser.add_argument('--num_val', default=64, type=int,
                         help='number of images to evalutate')
-    parser.add_argument('--workers', default=8, type=int,
+    parser.add_argument('--workers', default=16, type=int,
                         help='number of data loading workers')
     parser.add_argument('--imgSize', default=384, type=int,
                         help='input image size')

@@ -1,3 +1,4 @@
+import torch
 import numpy as np
 
 
@@ -13,7 +14,7 @@ class AverageMeter(object):
     def initialize(self, val, weight):
         self.val = val
         self.avg = val
-        self.sum = val*weight
+        self.sum = val * weight
         self.count = weight
         self.initialized = True
 
@@ -31,10 +32,13 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
     def value(self):
-        return self.val.tolist()
+        return self.val
 
     def average(self):
-        return self.avg.tolist()
+        return self.avg
+
+    def sum(self):
+        return self.sum
 
 
 def unique(ar, return_index=False, return_inverse=False, return_counts=False):
@@ -91,3 +95,36 @@ def colorEncode(labelmap, colors):
                     np.tile(colors[label-1],
                             (labelmap.shape[0], labelmap.shape[1], 1))
         return labelmap_rgb
+
+
+def accuracy(batch_data, pred):
+    (imgs, segs, infos) = batch_data
+    _, preds = torch.max(pred.data.cpu(), dim=1)
+    valid = (segs >= 0)
+    acc = 1.0 * torch.sum(valid * (preds == segs)) / torch.sum(valid)
+    return acc, torch.sum(valid)
+
+
+def intersectionAndUnion(batch_data, pred, numClass):
+    (imgs, segs, infos) = batch_data
+    _, preds = torch.max(pred.data.cpu(), dim=1)
+    # Compute area intersection:
+    intersect = preds * torch.eq(preds, segs).long()
+
+    area_intersect = torch.histc(intersect.float(),
+                                 bins=numClass,
+                                 min=0,
+                                 max=numClass-1)
+
+    # Compute area union:
+    area_pred = torch.histc(preds.float(),
+                            bins=numClass,
+                            min=0,
+                            max=numClass-1)
+    area_lab = torch.histc(segs.float(),
+                           bins=numClass,
+                           min=1,
+                           max=numClass-1)
+    area_union = area_pred + area_lab - area_intersect
+
+    return area_intersect, area_union
