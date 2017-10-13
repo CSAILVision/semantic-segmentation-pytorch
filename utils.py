@@ -37,9 +37,6 @@ class AverageMeter(object):
     def average(self):
         return self.avg
 
-    def sum(self):
-        return self.sum
-
 
 def unique(ar, return_index=False, return_inverse=False, return_counts=False):
     ar = np.asanyarray(ar).flatten()
@@ -85,16 +82,14 @@ def unique(ar, return_index=False, return_inverse=False, return_counts=False):
 
 
 def colorEncode(labelmap, colors):
-        labelmap = labelmap.astype('int')
-        labelmap_rgb = np.zeros((labelmap.shape[0], labelmap.shape[1], 3),
-                                dtype=np.uint8)
-        for label in unique(labelmap):
-                if label == 0:
-                        continue
-                labelmap_rgb += (labelmap == label)[:, :, np.newaxis] * \
-                    np.tile(colors[label-1],
-                            (labelmap.shape[0], labelmap.shape[1], 1))
-        return labelmap_rgb
+    labelmap = labelmap.astype('int')
+    labelmap_rgb = np.zeros((labelmap.shape[0], labelmap.shape[1], 3),
+                            dtype=np.uint8)
+    for label in unique(labelmap):
+            labelmap_rgb += (labelmap == label)[:, :, np.newaxis] * \
+                np.tile(colors[label],
+                        (labelmap.shape[0], labelmap.shape[1], 1))
+    return labelmap_rgb
 
 
 def accuracy(batch_data, pred):
@@ -108,23 +103,22 @@ def accuracy(batch_data, pred):
 def intersectionAndUnion(batch_data, pred, numClass):
     (imgs, segs, infos) = batch_data
     _, preds = torch.max(pred.data.cpu(), dim=1)
-    # Compute area intersection:
-    intersect = preds * torch.eq(preds, segs).long()
+    # compute area intersection
+    intersect = preds * (torch.eq(preds, segs).long() * 2 - 1)
 
     area_intersect = torch.histc(intersect.float(),
                                  bins=numClass,
                                  min=0,
                                  max=numClass-1)
 
-    # Compute area union:
+    # compute area union:
     area_pred = torch.histc(preds.float(),
                             bins=numClass,
                             min=0,
                             max=numClass-1)
     area_lab = torch.histc(segs.float(),
                            bins=numClass,
-                           min=1,
+                           min=0,
                            max=numClass-1)
     area_union = area_pred + area_lab - area_intersect
-
     return area_intersect, area_union

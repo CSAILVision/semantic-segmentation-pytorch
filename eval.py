@@ -13,7 +13,7 @@ from scipy.ndimage import zoom
 # Our libs
 from dataset import Dataset
 from models import ModelBuilder
-from utils import AverageMeter, colorEncode
+from utils import AverageMeter, colorEncode, accuracy, intersectionAndUnion
 
 
 # forward func for evaluation
@@ -49,15 +49,6 @@ def forward_multiscale(nets, batch_data, args):
     return pred, err
 
 
-def accuracy(batch_data, pred, args):
-    (imgs, segs, infos) = batch_data
-    pred_ = np.argmax(pred.data.cpu().numpy(), axis=1)
-    segs_ = segs.numpy()
-    valid_ = (segs_ >= 0)
-    acc = 1.0 * np.sum(valid_ * (pred_ == segs_)) / np.sum(valid_)
-    return acc, np.sum(valid_)
-
-
 def visualize_result(batch_data, pred, args):
     colors = loadmat('data/color150.mat')['colors']
     (imgs, segs, infos) = batch_data
@@ -72,11 +63,11 @@ def visualize_result(batch_data, pred, args):
         img = (img.numpy().transpose((1, 2, 0)) * 255).astype(np.uint8)
 
         # segmentation
-        lab = segs[j].numpy() + 1
+        lab = segs[j].numpy()
         lab_color = colorEncode(lab, colors)
 
         # prediction
-        pred_ = np.argmax(pred.data.cpu()[j].numpy(), axis=0) + 1
+        pred_ = np.argmax(pred.data.cpu()[j].numpy(), axis=0)
         pred_color = colorEncode(pred_, colors)
 
         # aggregate images and save
@@ -90,6 +81,8 @@ def visualize_result(batch_data, pred, args):
 def evaluate(nets, loader, args):
     loss_meter = AverageMeter()
     acc_meter = AverageMeter()
+    intersection_meter = AverageMeter()
+    union_meter = AverageMeter()
 
     # switch to eval mode
     for net in nets:
@@ -101,9 +94,12 @@ def evaluate(nets, loader, args):
         loss_meter.update(err.data[0])
 
         # calculate accuracy
-        acc, pix = accuracy(batch_data, pred, args)
+        acc, pix = accuracy(batch_data, pred)
+        intersection, union = intersectionAndUnion(batch_data, pred,
+                                                   args.segDepth)
         acc_meter.update(acc, pix)
-
+        intersection_meter.update(intersection)
+        union_meter.update(union)
         print('[{}] iter {}, loss: {}, accuracy: {}'
               .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                       i, err.data[0], acc))
@@ -112,8 +108,10 @@ def evaluate(nets, loader, args):
         if args.visualize:
             visualize_result(batch_data, pred, args)
 
-    print('[Eval Summary] Loss: {}, Accurarcy: {:.2f}%'
-          .format(loss_meter.average(), acc_meter.average()*100))
+    iou = intersection_meter.sum / (union_meter.sum + 1e-10)
+    print('[Eval Summary]:')
+    print('Loss: {}, Mean IoU: {:.4}, Accurarcy: {:.2f}%'
+          .format(loss_meter.average(), iou.mean(), acc_meter.average()*100))
 
 
 def main(args):
@@ -166,7 +164,7 @@ if __name__ == '__main__':
 
     # Path related arguments
     parser.add_argument('--list_val',
-                        default='data/ADE20K_object150_val.txt')
+                        default='./data/ADE20K_object150_val.txt')
     parser.add_argument('--root_img',
                         default='./data/ADEChallengeData2016/images')
     parser.add_argument('--root_seg',

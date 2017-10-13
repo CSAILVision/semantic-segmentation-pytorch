@@ -53,13 +53,13 @@ def visualize(batch_data, pred, args):
                        interp='bilinear')
 
         # segmentation
-        lab = segs[j].numpy() + 1
+        lab = segs[j].numpy()
         lab_color = colorEncode(lab, colors)
         lab_color = imresize(lab_color, (args.imgSize, args.imgSize),
                              interp='nearest')
 
         # prediction
-        pred_ = np.argmax(pred.data.cpu()[j].numpy(), axis=0) + 1
+        pred_ = np.argmax(pred.data.cpu()[j].numpy(), axis=0)
         pred_color = colorEncode(pred_, colors)
         pred_color = imresize(pred_color, (args.imgSize, args.imgSize),
                               interp='nearest')
