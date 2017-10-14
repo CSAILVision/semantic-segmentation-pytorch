@@ -19,7 +19,6 @@ class AverageMeter(object):
         self.initialized = True
 
     def update(self, val, weight=1):
-        val = np.asarray(val)
         if not self.initialized:
             self.initialize(val, weight)
         else:
