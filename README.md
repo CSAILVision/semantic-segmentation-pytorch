@@ -2,7 +2,7 @@
 
 This is a PyTorch implementation of semantic segmentation models on MIT ADE20K scene parsing dataset.
 
-Follow the link below to find the repository for our dataset and implementations on Caffe and Torch7:
+ADE20K is the largest open source dataset for semantic segmentation and scene parsing, released by MIT Computer Vision team. Follow the link below to find the repository for our dataset and implementations on Caffe and Torch7:
 
 https://github.com/CSAILVision/sceneparsing
 
@@ -24,7 +24,7 @@ https://github.com/CSAILVision/sceneparsing
 chmod +x download_ADE20K.sh
 ./download_ADE20K.sh
 ```
-2. Train a network: (default: ResNet34-dilated8)
+2. Train a network (default: resnet34_dilated8). During training, checkpoints will be saved in folder ```ckpt```, visual results will be saved in folder ```vis```.
 ```bash
 python train.py
 ```
