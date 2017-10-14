@@ -103,8 +103,10 @@ def accuracy(batch_data, pred):
 def intersectionAndUnion(batch_data, pred, numClass):
     (imgs, segs, infos) = batch_data
     _, preds = torch.max(pred.data.cpu(), dim=1)
+
     # compute area intersection
-    intersect = preds * (torch.eq(preds, segs).long() * 2 - 1)
+    intersect = preds.clone()
+    intersect[torch.ne(preds, segs)] = -1
 
     area_intersect = torch.histc(intersect.float(),
                                  bins=numClass,
@@ -112,6 +114,7 @@ def intersectionAndUnion(batch_data, pred, numClass):
                                  max=numClass-1)
 
     # compute area union:
+    preds[torch.lt(segs, 0)] = -1
     area_pred = torch.histc(preds.float(),
                             bins=numClass,
                             min=0,
