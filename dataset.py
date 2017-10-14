@@ -52,8 +52,8 @@ class Dataset(torchdata.Dataset):
             y1 = random.randint(0, h_s - cropSize)
         else:
             # center crop
-            x1 = (w_s - cropSize) / 2
-            y1 = (h_s - cropSize) / 2
+            x1 = (w_s - cropSize) // 2
+            y1 = (h_s - cropSize) // 2
 
         img_crop = img_scale[y1: y1 + cropSize, x1: x1 + cropSize, :]
         seg_crop = seg_scale[y1: y1 + cropSize, x1: x1 + cropSize]
