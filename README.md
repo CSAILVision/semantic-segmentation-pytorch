@@ -17,6 +17,10 @@ https://github.com/CSAILVision/sceneparsing
 - resnet50_dilated16
 - resnet50_dilated8
 
+## Environment
+The code is developed under the following configurations.
+- Hardware: 2-8 Pascal Titan X GPUs (change ```[--num_gpus NUM_GPUS]``` accordingly)
+- Software: Ubuntu 14.04, CUDA8.0, Python2.7, PyTorch 0.2.0
 
 ## Training
 1. Download the ADE20K scene parsing dataset:
