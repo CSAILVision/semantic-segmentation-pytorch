@@ -163,8 +163,8 @@ class ResnetDilated(nn.Module):
             if m.stride == (2, 2):
                 m.stride = (1, 1)
                 if m.kernel_size == (3, 3):
-                    m.dilation = (dilate/2, dilate/2)
-                    m.padding = (dilate/2, dilate/2)
+                    m.dilation = (dilate//2, dilate//2)
+                    m.padding = (dilate//2, dilate//2)
             # other convoluions
             else:
                 if m.kernel_size == (3, 3):
