@@ -234,6 +234,7 @@ def main(args):
     net_decoder = builder.build_decoder(arch=args.arch_decoder,
                                         fc_dim=args.fc_dim,
                                         segSize=args.segSize,
+                                        num_class=args.segDepth,
                                         weights=args.weights_decoder)
 
     crit = nn.NLLLoss2d(ignore_index=-1)
