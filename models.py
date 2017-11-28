@@ -127,11 +127,26 @@ class Resnet(nn.Module):
     def __init__(self, original_resnet):
         super(Resnet, self).__init__()
 
-        # take pretrained resnet, take away AvgPool and FC
-        self.features = nn.Sequential(*list(original_resnet.children())[:-2])
+        # take pretrained resnet, except AvgPool and FC
+        self.conv1 = original_resnet.conv1
+        self.bn1 = original_resnet.bn1
+        self.relu = original_resnet.relu
+        self.maxpool = original_resnet.maxpool
+        self.layer1 = original_resnet.layer1
+        self.layer2 = original_resnet.layer2
+        self.layer3 = original_resnet.layer3
+        self.layer4 = original_resnet.layer4
 
     def forward(self, x):
-        x = self.features(x)
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
         return x
 
 
@@ -150,8 +165,15 @@ class ResnetDilated(nn.Module):
             original_resnet.layer4.apply(
                 partial(self._nostride_dilate, dilate=2))
 
-        # take pretrained resnet, take away AvgPool and FC
-        self.features = nn.Sequential(*list(original_resnet.children())[:-2])
+        # take pretrained resnet, except AvgPool and FC
+        self.conv1 = original_resnet.conv1
+        self.bn1 = original_resnet.bn1
+        self.relu = original_resnet.relu
+        self.maxpool = original_resnet.maxpool
+        self.layer1 = original_resnet.layer1
+        self.layer2 = original_resnet.layer2
+        self.layer3 = original_resnet.layer3
+        self.layer4 = original_resnet.layer4
 
         if self.dropout2d:
             self.dropout = nn.Dropout2d(0.5)
@@ -172,7 +194,16 @@ class ResnetDilated(nn.Module):
                     m.padding = (dilate, dilate)
 
     def forward(self, x):
-        x = self.features(x)
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
         if self.dropout2d:
             x = self.dropout(x)
         return x
