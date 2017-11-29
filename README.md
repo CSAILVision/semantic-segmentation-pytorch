@@ -48,7 +48,7 @@ usage: train.py [-h] [--id ID] [--arch_encoder ARCH_ENCODER]
                 [--lr_step LR_STEP] [--beta1 BETA1]
                 [--weight_decay WEIGHT_DECAY] [--fix_bn FIX_BN]
                 [--num_val NUM_VAL] [--workers WORKERS] [--imgSize IMGSIZE]
-                [--segSize SEGSIZE] [--segDepth SEGDEPTH] [--flip FLIP]
+                [--segSize SEGSIZE] [--num_class NUM_CLASS]
                 [--seed SEED] [--ckpt CKPT] [--vis VIS]
                 [--disp_iter DISP_ITER] [--eval_epoch EVAL_EPOCH]
                 [--ckpt_epoch CKPT_EPOCH]
@@ -68,7 +68,7 @@ usage: eval.py [-h] --id ID [--suffix SUFFIX] [--arch_encoder ARCH_ENCODER]
                [--list_val LIST_VAL] [--root_img ROOT_IMG]
                [--root_seg ROOT_SEG] [--num_val NUM_VAL]
                [--batch_size BATCH_SIZE] [--imgSize IMGSIZE]
-               [--segSize SEGSIZE] [--segDepth SEGDEPTH] [--ckpt CKPT]
+               [--segSize SEGSIZE] [--num_class NUM_CLASS] [--ckpt CKPT]
                [--visualize VISUALIZE] [--result RESULT]
 ```
 
@@ -83,7 +83,7 @@ python test.py --id MODEL_ID --test_img TEST_IMG
 usage: test.py [-h] --id ID [--suffix SUFFIX] [--arch_encoder ARCH_ENCODER]
                [--arch_decoder ARCH_DECODER] [--fc_dim FC_DIM] --test_img
                TEST_IMG [--num_val NUM_VAL] [--batch_size BATCH_SIZE]
-               [--imgSize IMGSIZE] [--segSize SEGSIZE] [--segDepth SEGDEPTH]
+               [--imgSize IMGSIZE] [--segSize SEGSIZE] [--num_class NUM_CLASS]
                [--ckpt CKPT] [--visualize VISUALIZE] [--result RESULT]
 ```
 
