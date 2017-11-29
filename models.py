@@ -32,6 +32,9 @@ class ModelBuilder():
                                      conv5,
                                      pool4n5,
                                      dropout2d=True)
+        elif arch == 'resnet34':
+            original_resnet = torchvision.models.resnet34(pretrained=True)
+            net_encoder = Resnet(original_resnet)
         elif arch == 'resnet34_dilated8':
             original_resnet = torchvision.models.resnet34(pretrained=True)
             net_encoder = ResnetDilated(original_resnet,

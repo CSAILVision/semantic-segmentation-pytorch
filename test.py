@@ -18,7 +18,7 @@ from utils import colorEncode
 def forward_test_multiscale(nets, img, args):
     (net_encoder, net_decoder) = nets
 
-    pred = torch.zeros(1, args.segDepth, img.size(2), img.size(3))
+    pred = torch.zeros(1, args.num_class, img.size(2), img.size(3))
     pred = Variable(pred, volatile=True).cuda()
 
     for scale in args.scales:
@@ -130,14 +130,14 @@ if __name__ == '__main__':
     # Data related arguments
     parser.add_argument('--num_val', default=-1, type=int,
                         help='number of images to evalutate')
+    parser.add_argument('--num_class', default=150, type=int,
+                        help='number of classes')
     parser.add_argument('--batch_size', default=1, type=int,
                         help='batchsize')
     parser.add_argument('--imgSize', default=384, type=int,
                         help='resize input image')
     parser.add_argument('--segSize', default=-1, type=int,
                         help='output image size, -1 = keep original')
-    parser.add_argument('--segDepth', default=150, type=int,
-                        help='output image depth')
 
     # Misc arguments
     parser.add_argument('--ckpt', default='./ckpt',

@@ -234,14 +234,14 @@ def main(args):
     net_decoder = builder.build_decoder(arch=args.arch_decoder,
                                         fc_dim=args.fc_dim,
                                         segSize=args.segSize,
-                                        num_class=args.segDepth,
+                                        num_class=args.num_class,
                                         weights=args.weights_decoder)
 
     crit = nn.NLLLoss2d(ignore_index=-1)
 
     # Dataset and Loader
-    dataset_train = Dataset(args.list_train, args, flip=args.flip, is_train=1)
-    dataset_val = Dataset(args.list_val, args, flip=args.flip,
+    dataset_train = Dataset(args.list_train, args, is_train=1)
+    dataset_val = Dataset(args.list_val, args,
                           max_sample=args.num_val, is_train=0)
     loader_train = torch.utils.data.DataLoader(
         dataset_train,
@@ -342,16 +342,14 @@ if __name__ == '__main__':
     # Data related arguments
     parser.add_argument('--num_val', default=64, type=int,
                         help='number of images to evalutate')
+    parser.add_argument('--num_class', default=150, type=int,
+                        help='number of classes')
     parser.add_argument('--workers', default=16, type=int,
                         help='number of data loading workers')
     parser.add_argument('--imgSize', default=384, type=int,
                         help='input image size')
     parser.add_argument('--segSize', default=384, type=int,
                         help='output image size')
-    parser.add_argument('--segDepth', default=150, type=int,
-                        help='output image depth')
-    parser.add_argument('--flip', default=1, type=int,
-                        help='flip augmentation')
 
     # Misc arguments
     parser.add_argument('--seed', default=1234, type=int, help='manual seed')
@@ -367,7 +365,9 @@ if __name__ == '__main__':
                         help='frequency to checkpoint')
 
     args = parser.parse_args()
-    print(args)
+    print("Input arguments:")
+    for key, val in vars(args).items():
+        print("{:16} {}".format(key, val))
 
     args.batch_size = args.num_gpus * args.batch_size_per_gpu
     if args.num_val < args.batch_size:

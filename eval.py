@@ -22,7 +22,7 @@ def forward_multiscale(nets, batch_data, args):
     (imgs, segs, infos) = batch_data
 
     segSize = (segs.size(1), segs.size(2))
-    pred = torch.zeros(imgs.size(0), args.segDepth, segs.size(1), segs.size(2))
+    pred = torch.zeros(imgs.size(0), args.num_class, segs.size(1), segs.size(2))
     pred = Variable(pred, volatile=True).cuda()
 
     for scale in args.scales:
@@ -96,7 +96,7 @@ def evaluate(nets, loader, args):
         # calculate accuracy
         acc, pix = accuracy(batch_data, pred)
         intersection, union = intersectionAndUnion(batch_data, pred,
-                                                   args.segDepth)
+                                                   args.num_class)
         acc_meter.update(acc, pix)
         intersection_meter.update(intersection)
         union_meter.update(union)
@@ -173,14 +173,14 @@ if __name__ == '__main__':
     # Data related arguments
     parser.add_argument('--num_val', default=-1, type=int,
                         help='number of images to evalutate')
+    parser.add_argument('--num_class', default=150, type=int,
+                        help='number of classes')
     parser.add_argument('--batch_size', default=1, type=int,
                         help='batchsize')
     parser.add_argument('--imgSize', default=-1, type=int,
                         help='input image size, -1 = keep original')
     parser.add_argument('--segSize', default=-1, type=int,
                         help='output image size, -1 = keep original')
-    parser.add_argument('--segDepth', default=150, type=int,
-                        help='output image depth')
 
     # Misc arguments
     parser.add_argument('--ckpt', default='./ckpt',

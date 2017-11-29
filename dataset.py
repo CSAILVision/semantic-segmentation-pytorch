@@ -8,14 +8,13 @@ from scipy.misc import imread, imresize
 
 
 class Dataset(torchdata.Dataset):
-    def __init__(self, txt, opt, flip=0, max_sample=-1, is_train=1):
+    def __init__(self, txt, opt, max_sample=-1, is_train=1):
         self.root_img = opt.root_img
         self.root_seg = opt.root_seg
         self.imgSize = opt.imgSize
         self.segSize = opt.segSize
-        self.segDepth = opt.segDepth
         self.is_train = is_train
-        self.flip = flip
+
         # mean and std
         self.img_transform = transforms.Compose([
             transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -59,6 +58,11 @@ class Dataset(torchdata.Dataset):
         seg_crop = seg_scale[y1: y1 + cropSize, x1: x1 + cropSize]
         return img_crop, seg_crop
 
+    def _flip(self, img, seg):
+        img_flip = img[:, ::-1, :]
+        seg_flip = seg[:, ::-1]
+        return img_flip, seg_flip
+
     def __getitem__(self, index):
         img_basename = self.list_sample[index]
         path_img = os.path.join(self.root_img, img_basename)
@@ -77,10 +81,12 @@ class Dataset(torchdata.Dataset):
             assert(img.shape[0] == seg.shape[0])
             assert(img.shape[1] == seg.shape[1])
 
-            # random sacle and crop
+            # random sacle, crop, flip
             if self.imgSize > 0:
                 img, seg = self._scale_and_crop(img, seg,
                                                 self.imgSize, self.is_train)
+                if random.choice([-1, 1]) > 0:
+                    img, seg = self._flip(img, seg)
 
             # image to float
             img = img.astype(np.float32) / 255.
@@ -106,13 +112,6 @@ class Dataset(torchdata.Dataset):
 
         # substract mean and devide by std
         image = self.img_transform(image)
-
-        # flip augmentation
-        if self.flip and random.choice([-1, 1]) > 0:
-            inv_idx = torch.LongTensor(range(image.size(2)-1, -1, -1))
-            image = image.index_select(2, inv_idx)
-            inv_idx = torch.LongTensor(range(segmentation.size(1)-1, -1, -1))
-            segmentation = segmentation.index_select(1, inv_idx)
 
         return image, segmentation, img_basename
 
