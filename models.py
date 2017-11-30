@@ -60,7 +60,8 @@ class ModelBuilder():
         # net_encoder.apply(self.weights_init)
         if len(weights) > 0:
             print('Loading weights for net_encoder')
-            net_encoder.load_state_dict(torch.load(weights))
+            net_encoder.load_state_dict(
+                torch.load(weights, map_location=lambda storage, loc: storage))
         return net_encoder
 
     def build_decoder(self, arch='c1bilinear', fc_dim=1024, num_class=150,
@@ -81,7 +82,8 @@ class ModelBuilder():
         net_decoder.apply(self.weights_init)
         if len(weights) > 0:
             print('Loading weights for net_decoder')
-            net_decoder.load_state_dict(torch.load(weights))
+            net_decoder.load_state_dict(
+                torch.load(weights, map_location=lambda storage, loc: storage))
         return net_decoder
 
 
