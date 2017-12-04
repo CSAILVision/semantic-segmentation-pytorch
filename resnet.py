@@ -221,11 +221,7 @@ def resnet50(pretrained=False, **kwargs):
 #         model.load_state_dict(load_url(model_urls['resnet152']))
 #     return model
 
-def load_url(url, model_dir=None, map_location=None):
-    if model_dir is None:
-        torch_home = os.path.expanduser(os.getenv('TORCH_HOME', '~/.torch'))
-        model_dir = os.getenv('TORCH_MODEL_ZOO',
-                              os.path.join(torch_home, 'models'))
+def load_url(url, model_dir='./pretrained', map_location=None):
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
     filename = url.split('/')[-1]

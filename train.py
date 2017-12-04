@@ -153,11 +153,15 @@ def evaluate(nets, loader, history, epoch, args):
     if epoch > 0:
         print('Plotting loss figure...')
         fig = plt.figure()
-        plt.plot(history['train']['epoch'], history['train']['err'],
+        plt.plot(np.asarray(history['train']['epoch']),
+                 np.log(np.asarray(history['train']['err'])),
                  color='b', label='training')
-        plt.plot(history['val']['epoch'], history['val']['err'],
+        plt.plot(np.asarray(history['val']['epoch']),
+                 np.log(np.asarray(history['val']['err'])),
                  color='c', label='validation')
         plt.legend()
+        plt.xlabel('Epoch')
+        plt.ylabel('Log(loss)')
         fig.savefig('{}/loss.png'.format(args.ckpt), dpi=200)
         plt.close('all')
 
@@ -167,6 +171,8 @@ def evaluate(nets, loader, history, epoch, args):
         plt.plot(history['val']['epoch'], history['val']['acc'],
                  color='c', label='validation')
         plt.legend()
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
         fig.savefig('{}/accuracy.png'.format(args.ckpt), dpi=200)
         plt.close('all')
 
@@ -362,7 +368,7 @@ if __name__ == '__main__':
                         help='frequency to display')
     parser.add_argument('--eval_epoch', type=int, default=1,
                         help='frequency to evaluate')
-    parser.add_argument('--ckpt_epoch', type=int, default=5,
+    parser.add_argument('--ckpt_epoch', type=int, default=10,
                         help='frequency to checkpoint')
 
     args = parser.parse_args()
