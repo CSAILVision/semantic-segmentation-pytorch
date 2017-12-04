@@ -17,6 +17,8 @@ https://github.com/CSAILVision/sceneparsing
 - resnet50_dilated16
 - resnet50_dilated8
 
+IMPORTANT: One obstacle to a good dilated ResNet model is that batch normalization layers are usutally not well trained with small batch size . So in this repo, we trained customized ResNet on Places365 (will be automatically downloaded when needed) as the initialization for scene parsing model. You can simply set ```--fix_bn 1``` to freeze BN parameters during training.
+
 ## Environment
 The code is developed under the following configurations.
 - Hardware: 2-8 Pascal Titan X GPUs (change ```[--num_gpus NUM_GPUS]``` accordingly)
