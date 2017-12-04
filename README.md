@@ -26,7 +26,7 @@ Decoder:
 - psp_bilinear (pyramid pooling + bilinear upsample)
 
 ## Performance: (updating...)
-IMPORTANT: One obstacle to a good dilated ResNet model is that batch normalization layers are usutally not well trained with small batch size . So in this repo, we trained customized ResNet on Places365 (will be automatically downloaded when needed) as the initialization for scene parsing model. You can simply set ```--fix_bn 1``` to freeze BN parameters during training.
+IMPORTANT: One obstacle to a good dilated ResNet model is that batch normalization layers are usutally not well trained with a small batch size (<16). So in this repo, we trained customized ResNet on Places365 (will be automatically downloaded when needed) as the initialization for scene parsing model. You can simply set ```--fix_bn 1``` to freeze BN parameters during training.
 
 - resnet34_dilated8 + c1_bilinear: Mean IoU 0.3104, Accuracy: 76.24% 
 
