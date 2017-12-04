@@ -13,12 +13,14 @@ https://github.com/CSAILVision/sceneparsing
 We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling.
 
 Encoder:
-- vgg16_dilated
-- vgg19_dilated
+- vgg16_dilated8
+- vgg19_dilated8
 - resnet34_dilated16
 - resnet34_dilated8
 - resnet50_dilated16
 - resnet50_dilated8
+
+(resnetXX_dilatedYY: customized resnetXX with dilated convolutions, output feature map is 1/YY of input size.)
 
 Decoder:
 - c1_bilinear (1 conv + bilinear upsample)
