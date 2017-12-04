@@ -4,3 +4,4 @@ __init__.py
 ckpt/
 vis/
 log/
+pretrained/
