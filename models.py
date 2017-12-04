@@ -16,9 +16,9 @@ class ModelBuilder():
         elif classname.find('Linear') != -1:
             m.weight.data.normal_(0.0, 0.0001)
 
-    def build_encoder(self, arch='vgg16_dilated', fc_dim=1024, weights=''):
+    def build_encoder(self, arch='resnet34_dilated8', fc_dim=512, weights=''):
         pretrained = True if len(weights) == 0 else False
-        if arch == 'vgg16_dilated':
+        if arch == 'vgg16_dilated8':
             orig_vgg = torchvision.models.vgg16(pretrained=pretrained)
             conv5 = (24, 26, 28)
             pool4n5 = (23, 30)
@@ -26,7 +26,7 @@ class ModelBuilder():
                                      conv5,
                                      pool4n5,
                                      dropout2d=True)
-        elif arch == 'vgg19_dilated':
+        elif arch == 'vgg19_dilated8':
             orig_vgg = torchvision.models.vgg19(pretrained=pretrained)
             conv5 = (28, 30, 32, 34)
             pool4n5 = (27, 36)
@@ -66,7 +66,7 @@ class ModelBuilder():
                 torch.load(weights, map_location=lambda storage, loc: storage))
         return net_encoder
 
-    def build_decoder(self, arch='c1_bilinear', fc_dim=1024, num_class=150,
+    def build_decoder(self, arch='c1_bilinear', fc_dim=512, num_class=150,
                       segSize=384, weights='', use_softmax=False):
         if arch == 'c1_bilinear':
             net_decoder = C1Bilinear(num_class=num_class,
