@@ -10,6 +10,9 @@ https://github.com/CSAILVision/sceneparsing
 <img src="./teaser/validation_ADE_val_00001519.png" width="900"/>
 
 ## Supported models:
+We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders are consist of final convolutions and upsampling.
+
+Encoder:
 - vgg16_dilated
 - vgg19_dilated
 - resnet34_dilated16
@@ -17,7 +20,17 @@ https://github.com/CSAILVision/sceneparsing
 - resnet50_dilated16
 - resnet50_dilated8
 
+Decoder:
+- c1_bilinear (1 conv + bilinear upsample)
+- c5_bilinear (5 conv + bilinear upsample)
+- psp_bilinear (pyramid pooling + bilinear upsample)
+
+## Performance: (updating...)
 IMPORTANT: One obstacle to a good dilated ResNet model is that batch normalization layers are usutally not well trained with small batch size . So in this repo, we trained customized ResNet on Places365 (will be automatically downloaded when needed) as the initialization for scene parsing model. You can simply set ```--fix_bn 1``` to freeze BN parameters during training.
+
+- resnet34_dilated8 + c1_bilinear: Mean IoU 0.3104, Accuracy: 76.24% 
+
+- resnet34_dilated8 + psp_bilinear: Mean IoU 0.3558, Accuracy: 77.72% 
 
 ## Environment
 The code is developed under the following configurations.
