@@ -10,7 +10,7 @@ https://github.com/CSAILVision/sceneparsing
 <img src="./teaser/validation_ADE_val_00001519.png" width="900"/>
 
 ## Supported models:
-We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders are consist of final convolutions and upsampling.
+We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling.
 
 Encoder:
 - vgg16_dilated
@@ -60,7 +60,7 @@ usage: train.py [-h] [--id ID] [--arch_encoder ARCH_ENCODER]
                 [--batch_size_per_gpu BATCH_SIZE_PER_GPU]
                 [--num_epoch NUM_EPOCH] [--optim OPTIM]
                 [--lr_encoder LR_ENCODER] [--lr_decoder LR_DECODER]
-                [--lr_step LR_STEP] [--beta1 BETA1]
+                [--beta1 BETA1]
                 [--weight_decay WEIGHT_DECAY] [--fix_bn FIX_BN]
                 [--num_val NUM_VAL] [--workers WORKERS] [--imgSize IMGSIZE]
                 [--segSize SEGSIZE] [--num_class NUM_CLASS]
