@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision
+import resnet
 
 
 class ModelBuilder():
@@ -16,43 +17,44 @@ class ModelBuilder():
             m.weight.data.normal_(0.0, 0.0001)
 
     def build_encoder(self, arch='vgg16_dilated', fc_dim=1024, weights=''):
+        pretrained = True if len(weights) == 0 else False
         if arch == 'vgg16_dilated':
-            original_vgg = torchvision.models.vgg16(pretrained=True)
+            orig_vgg = torchvision.models.vgg16(pretrained=pretrained)
             conv5 = (24, 26, 28)
             pool4n5 = (23, 30)
-            net_encoder = VggDilated(original_vgg,
+            net_encoder = VggDilated(orig_vgg,
                                      conv5,
                                      pool4n5,
                                      dropout2d=True)
         elif arch == 'vgg19_dilated':
-            original_vgg = torchvision.models.vgg19(pretrained=True)
+            orig_vgg = torchvision.models.vgg19(pretrained=pretrained)
             conv5 = (28, 30, 32, 34)
             pool4n5 = (27, 36)
-            net_encoder = VggDilated(original_vgg,
+            net_encoder = VggDilated(orig_vgg,
                                      conv5,
                                      pool4n5,
                                      dropout2d=True)
         elif arch == 'resnet34':
-            original_resnet = torchvision.models.resnet34(pretrained=True)
-            net_encoder = Resnet(original_resnet)
+            orig_resnet = resnet.__dict__['resnet34'](pretrained=pretrained)
+            net_encoder = Resnet(orig_resnet)
         elif arch == 'resnet34_dilated8':
-            original_resnet = torchvision.models.resnet34(pretrained=True)
-            net_encoder = ResnetDilated(original_resnet,
+            orig_resnet = resnet.__dict__['resnet34'](pretrained=pretrained)
+            net_encoder = ResnetDilated(orig_resnet,
                                         dilate_scale=8)
         elif arch == 'resnet34_dilated16':
-            original_resnet = torchvision.models.resnet34(pretrained=True)
-            net_encoder = ResnetDilated(original_resnet,
+            orig_resnet = resnet.__dict__['resnet34'](pretrained=pretrained)
+            net_encoder = ResnetDilated(orig_resnet,
                                         dilate_scale=16)
         elif arch == 'resnet50':
-            original_resnet = torchvision.models.resnet50(pretrained=True)
-            net_encoder = Resnet(original_resnet)
+            orig_resnet = resnet.__dict__['resnet50'](pretrained=pretrained)
+            net_encoder = Resnet(orig_resnet)
         elif arch == 'resnet50_dilated8':
-            original_resnet = torchvision.models.resnet50(pretrained=True)
-            net_encoder = ResnetDilated(original_resnet,
+            orig_resnet = resnet.__dict__['resnet50'](pretrained=pretrained)
+            net_encoder = ResnetDilated(orig_resnet,
                                         dilate_scale=8)
         elif arch == 'resnet50_dilated16':
-            original_resnet = torchvision.models.resnet50(pretrained=True)
-            net_encoder = ResnetDilated(original_resnet,
+            orig_resnet = resnet.__dict__['resnet50'](pretrained=pretrained)
+            net_encoder = ResnetDilated(orig_resnet,
                                         dilate_scale=16)
         else:
             raise Exception('Architecture undefined!')
@@ -88,27 +90,27 @@ class ModelBuilder():
 
 
 class VggDilated(nn.Module):
-    def __init__(self, original_vgg, conv5, pool4n5, dropout2d=True):
+    def __init__(self, orig_vgg, conv5, pool4n5, dropout2d=True):
         super(VggDilated, self).__init__()
 
         # make conv5 dilated
         for i in conv5:
-            original_vgg.features[i].dilation = (2, 2)
-            original_vgg.features[i].padding = (2, 2)
+            orig_vgg.features[i].dilation = (2, 2)
+            orig_vgg.features[i].padding = (2, 2)
         # take away pool4 and pool5
-        modules = [x for i, x in enumerate(original_vgg.features)
+        modules = [x for i, x in enumerate(orig_vgg.features)
                    if i not in pool4n5]
         self.features = nn.Sequential(*(modules))
 
         # convert fc weights into conv1x1 weights
         self.conv6 = nn.Conv2d(512, 4096, 7, 1, 12, 4)
         self.conv6.weight.data.copy_(
-            original_vgg.classifier[0].weight.data.resize_(4096, 512, 7, 7))
-        self.conv6.bias.data.copy_(original_vgg.classifier[0].bias.data)
+            orig_vgg.classifier[0].weight.data.resize_(4096, 512, 7, 7))
+        self.conv6.bias.data.copy_(orig_vgg.classifier[0].bias.data)
         self.conv7 = nn.Conv2d(4096, 4096, 1, 1, 0)
         self.conv7.weight.data.copy_(
-            original_vgg.classifier[3].weight.data.resize_(4096, 4096, 1, 1))
-        self.conv7.bias.data.copy_(original_vgg.classifier[3].bias.data)
+            orig_vgg.classifier[3].weight.data.resize_(4096, 4096, 1, 1))
+        self.conv7.bias.data.copy_(orig_vgg.classifier[3].bias.data)
 
         self.relu6 = nn.ReLU(True)
         self.relu7 = nn.ReLU(True)
@@ -129,23 +131,29 @@ class VggDilated(nn.Module):
 
 
 class Resnet(nn.Module):
-    def __init__(self, original_resnet):
+    def __init__(self, orig_resnet):
         super(Resnet, self).__init__()
 
         # take pretrained resnet, except AvgPool and FC
-        self.conv1 = original_resnet.conv1
-        self.bn1 = original_resnet.bn1
-        self.relu = original_resnet.relu
-        self.maxpool = original_resnet.maxpool
-        self.layer1 = original_resnet.layer1
-        self.layer2 = original_resnet.layer2
-        self.layer3 = original_resnet.layer3
-        self.layer4 = original_resnet.layer4
+        self.conv1 = orig_resnet.conv1
+        self.bn1 = orig_resnet.bn1
+        self.relu1 = orig_resnet.relu1
+        self.conv2 = orig_resnet.conv2
+        self.bn2 = orig_resnet.bn2
+        self.relu2 = orig_resnet.relu2
+        self.conv3 = orig_resnet.conv3
+        self.bn3 = orig_resnet.bn3
+        self.relu3 = orig_resnet.relu3
+        self.maxpool = orig_resnet.maxpool
+        self.layer1 = orig_resnet.layer1
+        self.layer2 = orig_resnet.layer2
+        self.layer3 = orig_resnet.layer3
+        self.layer4 = orig_resnet.layer4
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
+        x = self.relu1(self.bn1(self.conv1(x)))
+        x = self.relu2(self.bn2(self.conv2(x)))
+        x = self.relu3(self.bn3(self.conv3(x)))
         x = self.maxpool(x)
 
         x = self.layer1(x)
@@ -156,29 +164,35 @@ class Resnet(nn.Module):
 
 
 class ResnetDilated(nn.Module):
-    def __init__(self, original_resnet, dilate_scale=8, dropout2d=False):
+    def __init__(self, orig_resnet, dilate_scale=8, dropout2d=False):
         super(ResnetDilated, self).__init__()
         self.dropout2d = dropout2d
         from functools import partial
 
         if dilate_scale == 8:
-            original_resnet.layer3.apply(
+            orig_resnet.layer3.apply(
                 partial(self._nostride_dilate, dilate=2))
-            original_resnet.layer4.apply(
+            orig_resnet.layer4.apply(
                 partial(self._nostride_dilate, dilate=4))
         elif dilate_scale == 16:
-            original_resnet.layer4.apply(
+            orig_resnet.layer4.apply(
                 partial(self._nostride_dilate, dilate=2))
 
         # take pretrained resnet, except AvgPool and FC
-        self.conv1 = original_resnet.conv1
-        self.bn1 = original_resnet.bn1
-        self.relu = original_resnet.relu
-        self.maxpool = original_resnet.maxpool
-        self.layer1 = original_resnet.layer1
-        self.layer2 = original_resnet.layer2
-        self.layer3 = original_resnet.layer3
-        self.layer4 = original_resnet.layer4
+        self.conv1 = orig_resnet.conv1
+        self.bn1 = orig_resnet.bn1
+        self.relu1 = orig_resnet.relu1
+        self.conv2 = orig_resnet.conv2
+        self.bn2 = orig_resnet.bn2
+        self.relu2 = orig_resnet.relu2
+        self.conv3 = orig_resnet.conv3
+        self.bn3 = orig_resnet.bn3
+        self.relu3 = orig_resnet.relu3
+        self.maxpool = orig_resnet.maxpool
+        self.layer1 = orig_resnet.layer1
+        self.layer2 = orig_resnet.layer2
+        self.layer3 = orig_resnet.layer3
+        self.layer4 = orig_resnet.layer4
 
         if self.dropout2d:
             self.dropout = nn.Dropout2d(0.5)
@@ -199,9 +213,9 @@ class ResnetDilated(nn.Module):
                     m.padding = (dilate, dilate)
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
+        x = self.relu1(self.bn1(self.conv1(x)))
+        x = self.relu2(self.bn2(self.conv2(x)))
+        x = self.relu3(self.bn3(self.conv3(x)))
         x = self.maxpool(x)
 
         x = self.layer1(x)

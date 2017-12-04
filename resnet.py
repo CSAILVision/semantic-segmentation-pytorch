@@ -1,14 +1,21 @@
+import os
+import sys
+import torch
 import torch.nn as nn
 import math
-import torch.utils.model_zoo as model_zoo
+
+try:
+    from urllib import urlretrieve
+except ImportError:
+    from urllib.request import urlretrieve
 
 
 __all__ = ['ResNet', 'resnet34', 'resnet50']
 
 
 model_urls = {
-    'resnet34': 'http://sceneparsing.csail.mit.edu/model/pretrained_places/resnet34_places.pth',
-    'resnet50': 'http://sceneparsing.csail.mit.edu/model/pretrained_places/resnet50_places.pth',
+    'resnet34': 'http://sceneparsing.csail.mit.edu/model/pretrained_places/resnet34-places365.pth',
+    'resnet50': 'http://sceneparsing.csail.mit.edu/model/pretrained_places/resnet50-places365.pth',
 }
 
 
@@ -163,7 +170,7 @@ def resnet18(pretrained=False, **kwargs):
     """
     model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+        model.load_state_dict(load_url(model_urls['resnet18']))
     return model
 
 
@@ -175,7 +182,7 @@ def resnet34(pretrained=False, **kwargs):
     """
     model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet34']))
+        model.load_state_dict(load_url(model_urls['resnet34']))
     return model
 
 
@@ -187,7 +194,7 @@ def resnet50(pretrained=False, **kwargs):
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet50']))
+        model.load_state_dict(load_url(model_urls['resnet50']))
     return model
 
 
@@ -199,7 +206,7 @@ def resnet50(pretrained=False, **kwargs):
 #     """
 #     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
 #     if pretrained:
-#         model.load_state_dict(model_zoo.load_url(model_urls['resnet101']))
+#         model.load_state_dict(load_url(model_urls['resnet101']))
 #     return model
 #
 #
@@ -211,5 +218,19 @@ def resnet50(pretrained=False, **kwargs):
 #     """
 #     model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
 #     if pretrained:
-#         model.load_state_dict(model_zoo.load_url(model_urls['resnet152']))
+#         model.load_state_dict(load_url(model_urls['resnet152']))
 #     return model
+
+def load_url(url, model_dir=None, map_location=None):
+    if model_dir is None:
+        torch_home = os.path.expanduser(os.getenv('TORCH_HOME', '~/.torch'))
+        model_dir = os.getenv('TORCH_MODEL_ZOO',
+                              os.path.join(torch_home, 'models'))
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
+    filename = url.split('/')[-1]
+    cached_file = os.path.join(model_dir, filename)
+    if not os.path.exists(cached_file):
+        sys.stderr.write('Downloading: "{}" to {}\n'.format(url, cached_file))
+        urlretrieve(url, cached_file)
+    return torch.load(cached_file, map_location=map_location)
