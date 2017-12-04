@@ -81,7 +81,7 @@ class Dataset(torchdata.Dataset):
             assert(img.shape[0] == seg.shape[0])
             assert(img.shape[1] == seg.shape[1])
 
-            # random sacle, crop, flip
+            # random scale, crop, flip
             if self.imgSize > 0:
                 img, seg = self._scale_and_crop(img, seg,
                                                 self.imgSize, self.is_train)
@@ -110,7 +110,7 @@ class Dataset(torchdata.Dataset):
             segmentation = -1 * torch.ones(self.segSize, self.segSize).long()
             return image, segmentation, img_basename
 
-        # substract mean and devide by std
+        # substracted by mean and divided by std
         image = self.img_transform(image)
 
         return image, segmentation, img_basename

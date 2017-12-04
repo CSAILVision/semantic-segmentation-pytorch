@@ -66,18 +66,23 @@ class ModelBuilder():
                 torch.load(weights, map_location=lambda storage, loc: storage))
         return net_encoder
 
-    def build_decoder(self, arch='c1bilinear', fc_dim=1024, num_class=150,
+    def build_decoder(self, arch='c1_bilinear', fc_dim=1024, num_class=150,
                       segSize=384, weights='', use_softmax=False):
-        if arch == 'c1bilinear':
+        if arch == 'c1_bilinear':
             net_decoder = C1Bilinear(num_class=num_class,
                                      fc_dim=fc_dim,
                                      segSize=segSize,
                                      use_softmax=use_softmax)
-        elif arch == 'c5bilinear':
+        elif arch == 'c5_bilinear':
             net_decoder = C5Bilinear(num_class=num_class,
                                      fc_dim=fc_dim,
                                      segSize=segSize,
                                      use_softmax=use_softmax)
+        elif arch == 'psp_bilinear':
+            net_decoder = PSPBilinear(num_class=num_class,
+                                      fc_dim=fc_dim,
+                                      segSize=segSize,
+                                      use_softmax=use_softmax)
         else:
             raise Exception('Architecture undefined!')
 
@@ -292,6 +297,60 @@ class C5Bilinear(nn.Module):
         x = self.conv_last(x)
 
         if not (x.size(2) == segSize[0] and x.size(3) == segSize[1]):
+            x = nn.functional.upsample(x, size=segSize, mode='bilinear')
+
+        if self.use_softmax:
+            x = nn.functional.softmax(x)
+        else:
+            x = nn.functional.log_softmax(x)
+        return x
+
+
+# pyramid pooling, bilinear upsample
+class PSPBilinear(nn.Module):
+    def __init__(self, num_class=150, fc_dim=4096, segSize=384,
+                 use_softmax=False, pool_scales=(1, 2, 3, 6)):
+        super(PSPBilinear, self).__init__()
+        self.segSize = segSize
+        self.use_softmax = use_softmax
+
+        self.psp = []
+        for scale in pool_scales:
+            self.psp.append(nn.Sequential(
+                nn.AdaptiveAvgPool2d(scale),
+                nn.Conv2d(fc_dim, 512, kernel_size=1, bias=False),
+                nn.BatchNorm2d(512),
+                nn.ReLU(inplace=True)
+            ))
+        self.psp = nn.ModuleList(self.psp)
+
+        self.conv_last = nn.Sequential(
+            nn.Conv2d(fc_dim+len(pool_scales)*512, 512,
+                      kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.1),
+            nn.Conv2d(512, num_class, kernel_size=1)
+        )
+
+    def forward(self, x, segSize=None):
+        if segSize is None:
+            segSize = (self.segSize, self.segSize)
+        elif isinstance(segSize, int):
+            segSize = (segSize, segSize)
+
+        input_size = x.size()
+        psp_out = [x]
+        for pool_scale in self.psp:
+            psp_out.append(nn.functional.upsample(
+                pool_scale(x),
+                (input_size[2], input_size[3]),
+                mode='bilinear'))
+        psp_out = torch.cat(psp_out, 1)
+
+        x = self.conv_last(psp_out)
+
+        if not (input_size[2] == segSize[0] and input_size[3] == segSize[1]):
             x = nn.functional.upsample(x, size=segSize, mode='bilinear')
 
         if self.use_softmax:

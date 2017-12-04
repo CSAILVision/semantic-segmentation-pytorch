@@ -109,6 +109,9 @@ def evaluate(nets, loader, args):
             visualize_result(batch_data, pred, args)
 
     iou = intersection_meter.sum / (union_meter.sum + 1e-10)
+    for i, _iou in enumerate(iou):
+        print('class [{}], IoU: {}'.format(i, _iou))
+
     print('[Eval Summary]:')
     print('Loss: {}, Mean IoU: {:.4}, Accurarcy: {:.2f}%'
           .format(loss_meter.average(), iou.mean(), acc_meter.average()*100))
@@ -157,7 +160,7 @@ if __name__ == '__main__':
                         help="which snapshot to load")
     parser.add_argument('--arch_encoder', default='resnet34_dilated8',
                         help="architecture of net_encoder")
-    parser.add_argument('--arch_decoder', default='c1bilinear',
+    parser.add_argument('--arch_decoder', default='c1_bilinear',
                         help="architecture of net_decoder")
     parser.add_argument('--fc_dim', default=512, type=int,
                         help='number of features between encoder and decoder')
@@ -194,6 +197,7 @@ if __name__ == '__main__':
     print(args)
 
     # scales for evaluation
+    # args.scales = (1, )
     args.scales = (0.5, 0.75, 1, 1.25, 1.5)
 
     # absolute paths of model weights

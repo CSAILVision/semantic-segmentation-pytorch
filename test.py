@@ -119,7 +119,7 @@ if __name__ == '__main__':
                         help="which snapshot to load")
     parser.add_argument('--arch_encoder', default='resnet34_dilated8',
                         help="architecture of net_encoder")
-    parser.add_argument('--arch_decoder', default='c1bilinear',
+    parser.add_argument('--arch_decoder', default='c1_bilinear',
                         help="architecture of net_decoder")
     parser.add_argument('--fc_dim', default=512, type=int,
                         help='number of features between encoder and decoder')
