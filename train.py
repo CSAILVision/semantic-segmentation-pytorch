@@ -328,7 +328,7 @@ if __name__ == '__main__':
                         default='./data/ADEChallengeData2016/annotations')
 
     # optimization related arguments
-    parser.add_argument('--num_gpus', default=2, type=int,
+    parser.add_argument('--num_gpus', default=1, type=int,
                         help='number of gpus to use')
     parser.add_argument('--batch_size_per_gpu', default=16, type=int,
                         help='input batch size')
