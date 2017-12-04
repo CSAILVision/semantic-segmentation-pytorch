@@ -215,9 +215,11 @@ def create_optimizers(nets, args):
     return (optimizer_encoder, optimizer_decoder)
 
 
-def adjust_learning_rate(optimizers, args):
-    args.lr_encoder *= 0.1
-    args.lr_decoder *= 0.1
+def adjust_learning_rate(optimizers, epoch, args):
+    drop_ratio = (1. * (args.num_epoch-epoch) / (args.num_epoch-epoch+1)) \
+                 ** args.lr_pow
+    args.lr_encoder *= drop_ratio
+    args.lr_decoder *= drop_ratio
     (optimizer_encoder, optimizer_decoder) = optimizers
     for param_group in optimizer_encoder.param_groups:
         param_group['lr'] = args.lr_encoder
@@ -288,8 +290,7 @@ def main(args):
             checkpoint(nets, history, epoch, args)
 
         # adjust learning rate
-        if epoch % args.lr_step == 0:
-            adjust_learning_rate(optimizers, args)
+        adjust_learning_rate(optimizers, epoch, args)
 
     print('Training Done!')
 
@@ -325,13 +326,13 @@ if __name__ == '__main__':
                         help='number of gpus to use')
     parser.add_argument('--batch_size_per_gpu', default=16, type=int,
                         help='input batch size')
-    parser.add_argument('--num_epoch', default=50, type=int,
+    parser.add_argument('--num_epoch', default=100, type=int,
                         help='epochs to train for')
     parser.add_argument('--optim', default='SGD', help='optimizer')
-    parser.add_argument('--lr_encoder', default=1e-4, type=float, help='LR')
-    parser.add_argument('--lr_decoder', default=1e-3, type=float, help='LR')
-    parser.add_argument('--lr_step', default=20, type=int,
-                        help='stepsize to drop LR in epochs')
+    parser.add_argument('--lr_encoder', default=1e-3, type=float, help='LR')
+    parser.add_argument('--lr_decoder', default=1e-2, type=float, help='LR')
+    parser.add_argument('--lr_pow', default=0.9, type=float,
+                        help='power in poly to drop LR')
     parser.add_argument('--beta1', default=0.9, type=float,
                         help='momentum for sgd, beta1 for adam')
     parser.add_argument('--weight_decay', default=1e-4, type=float,
@@ -382,7 +383,6 @@ if __name__ == '__main__':
     args.id += '-lr_encoder' + str(args.lr_encoder)
     args.id += '-lr_decoder' + str(args.lr_decoder)
     args.id += '-epoch' + str(args.num_epoch)
-    args.id += '-step' + str(args.lr_step)
     args.id += '-decay' + str(args.weight_decay)
     print('Model ID: {}'.format(args.id))
 
