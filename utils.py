@@ -85,9 +85,11 @@ def colorEncode(labelmap, colors):
     labelmap_rgb = np.zeros((labelmap.shape[0], labelmap.shape[1], 3),
                             dtype=np.uint8)
     for label in unique(labelmap):
-            labelmap_rgb += (labelmap == label)[:, :, np.newaxis] * \
-                np.tile(colors[label],
-                        (labelmap.shape[0], labelmap.shape[1], 1))
+        if label < 0:
+            continue
+        labelmap_rgb += (labelmap == label)[:, :, np.newaxis] * \
+            np.tile(colors[label],
+                    (labelmap.shape[0], labelmap.shape[1], 1))
     return labelmap_rgb
 
 
