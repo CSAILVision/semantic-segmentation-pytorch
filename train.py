@@ -177,10 +177,10 @@ def evaluate(nets, loader, history, epoch, args):
         plt.close('all')
 
 
-def checkpoint(nets, history, epoch, args):
-    print('Saving checkpoints at {} epochs.'.format(epoch))
+def checkpoint(nets, history, args):
+    print('Saving checkpoints...')
     (net_encoder, net_decoder, crit) = nets
-    suffix_save = 'epoch{}.pth'.format(epoch)
+    suffix_latest = 'latest.pth'
     suffix_best = 'best.pth'
 
     if args.num_gpus > 1:
@@ -191,15 +191,17 @@ def checkpoint(nets, history, epoch, args):
         dict_decoder = net_decoder.state_dict()
 
     torch.save(history,
-               '{}/history_{}'.format(args.ckpt, suffix_save))
+               '{}/history_{}'.format(args.ckpt, suffix_latest))
     torch.save(dict_encoder,
-               '{}/encoder_{}'.format(args.ckpt, suffix_save))
+               '{}/encoder_{}'.format(args.ckpt, suffix_latest))
     torch.save(dict_decoder,
-               '{}/decoder_{}'.format(args.ckpt, suffix_save))
+               '{}/decoder_{}'.format(args.ckpt, suffix_latest))
 
     cur_err = history['val']['err'][-1]
     if cur_err < args.best_err:
         args.best_err = cur_err
+        torch.save(history,
+                   '{}/history_{}'.format(args.ckpt, suffix_best))
         torch.save(dict_encoder,
                    '{}/encoder_{}'.format(args.ckpt, suffix_best))
         torch.save(dict_decoder,
@@ -292,8 +294,7 @@ def main(args):
             evaluate(nets, loader_val, history, epoch, args)
 
         # checkpointing
-        if epoch % args.ckpt_epoch == 0:
-            checkpoint(nets, history, epoch, args)
+        checkpoint(nets, history, args)
 
         # adjust learning rate
         adjust_learning_rate(optimizers, epoch, args)
@@ -368,8 +369,6 @@ if __name__ == '__main__':
                         help='frequency to display')
     parser.add_argument('--eval_epoch', type=int, default=1,
                         help='frequency to evaluate')
-    parser.add_argument('--ckpt_epoch', type=int, default=10,
-                        help='frequency to checkpoint')
 
     args = parser.parse_args()
     print("Input arguments:")
