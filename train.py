@@ -347,7 +347,7 @@ if __name__ == '__main__':
                         help='fix bn params')
 
     # Data related arguments
-    parser.add_argument('--num_val', default=64, type=int,
+    parser.add_argument('--num_val', default=128, type=int,
                         help='number of images to evalutate')
     parser.add_argument('--num_class', default=150, type=int,
                         help='number of classes')
