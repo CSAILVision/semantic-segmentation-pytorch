@@ -93,7 +93,7 @@ usage: eval.py [-h] --id ID [--suffix SUFFIX] [--arch_encoder ARCH_ENCODER]
 ## Test/Inference
 1. Do inference on a single image:
 ```bash
-python test.py --id MODEL_ID --test_img TEST_IMG
+python test.py --ckpt CKPT_PATH --id MODEL_ID --test_img TEST_IMG
 ```
 2. Input arguments: (see full input arguments via ```python test.py -h ```)
 ```bash
