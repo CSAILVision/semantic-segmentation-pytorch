@@ -14,8 +14,8 @@ __all__ = ['ResNet', 'resnet34', 'resnet50']
 
 
 model_urls = {
-    'resnet34': 'http://sceneparsing.csail.mit.edu/model/pretrained_places/resnet34-places365.pth',
-    'resnet50': 'http://sceneparsing.csail.mit.edu/model/pretrained_places/resnet50-places365.pth',
+    'resnet34': 'http://sceneparsing.csail.mit.edu/model/pretrained_resnet/resnet34-places365.pth',
+    'resnet50': 'http://sceneparsing.csail.mit.edu/model/pretrained_resnet/resnet50-places365.pth',
 }
 
 
