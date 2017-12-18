@@ -3,8 +3,10 @@
 This is a PyTorch implementation of semantic segmentation models on MIT ADE20K scene parsing dataset.
 
 ADE20K is the largest open source dataset for semantic segmentation and scene parsing, released by MIT Computer Vision team. Follow the link below to find the repository for our dataset and implementations on Caffe and Torch7:
-
 https://github.com/CSAILVision/sceneparsing
+
+Pretrained models can be found at:
+http://sceneparsing.csail.mit.edu/model/
 
 <img src="./teaser/validation_ADE_val_00000278.png" width="900"/>
 <img src="./teaser/validation_ADE_val_00001519.png" width="900"/>
@@ -25,6 +27,7 @@ Encoder:
 Decoder:
 - c1_bilinear (1 conv + bilinear upsample)
 - psp_bilinear (pyramid pooling + bilinear upsample, see PSPNet paper for details)
+
 
 ## Performance:
 IMPORTANT: One obstacle to a good dilated ResNet model is that batch normalization layers are usually not well trained with a small batch size (<16). Ideally, batch size >64 will get you the best results. In this repo, we trained customized ResNet on Places365 (will be automatically downloaded when needed) as the initialization for scene parsing model, which partly solved the problem. You can simply set ```--fix_bn 1``` to freeze BN parameters during training.
