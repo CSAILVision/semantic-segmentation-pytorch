@@ -10,6 +10,7 @@ http://sceneparsing.csail.mit.edu/model/
 
 <img src="./teaser/validation_ADE_val_00000278.png" width="900"/>
 <img src="./teaser/validation_ADE_val_00001519.png" width="900"/>
+From left to right: Test Image, Ground Truth, Predicted Result
 
 ## Supported models:
 We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling.
