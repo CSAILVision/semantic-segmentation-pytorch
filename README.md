@@ -33,13 +33,36 @@ Decoder:
 ## Performance:
 IMPORTANT: One obstacle to a good dilated ResNet model is that batch normalization layers are usually not well trained with a small batch size (<16). Ideally, batch size >64 will get you the best results. In this repo, we trained customized ResNet on Places365 (will be automatically downloaded when needed) as the initialization for scene parsing model, which partly solved the problem. You can simply set ```--fix_bn 1``` to freeze BN parameters during training.
 
-- resnet34_dilated8 + c1_bilinear: Mean IoU 0.3277, Accuracy: 76.47% 
-
-- resnet34_dilated8 + psp_bilinear: Mean IoU 0.3634, Accuracy: 77.98% 
-
-- resnet50_dilated8 + c1_bilinear: Mean IoU 0.3385, Accuracy: 76.40% 
-
-- resnet50_dilated8 + psp_bilinear: Mean IoU 0.3800, Accuracy: 78.21% 
+<table><tbody>
+    <th valign="bottom">Encoder</th>
+    <th valign="bottom">Decoder</th>
+    <th valign="bottom">Mean IoU</th>
+    <th valign="bottom">Pixel Accuracy</th>
+    <tr>
+        <td>resnet34_dilated8</td>
+        <td>c1_bilinear</td>
+        <td>0.3277</td>
+        <td>76.47%</td>
+    </tr>
+    <tr>
+        <td>resnet34_dilated8</td>
+        <td>psp_bilinear</td>
+        <td>0.3634</td>
+        <td>77.98%</td>
+    </tr>
+    <tr>
+        <td>resnet50_dilated8</td>
+        <td>c1_bilinear</td>
+        <td>0.3385</td>
+        <td>76.40%</td>
+    </tr>
+    <tr>
+        <td>resnet50_dilated8</td>
+        <td>psp_bilinear</td>
+        <td>0.3800</td>
+        <td>78.21%</td>
+    </tr>
+</tbody></table>
 
 ## Environment
 The code is developed under the following configurations.
