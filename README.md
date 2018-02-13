@@ -121,17 +121,18 @@ usage: eval.py [-h] --id ID [--suffix SUFFIX] [--arch_encoder ARCH_ENCODER]
 
 
 ## Test/Inference
-1. Do inference on a single image:
+1. Here is a simple demo to do inference on a single image:
 ```bash
-python test.py --ckpt CKPT_PATH --id MODEL_ID --test_img TEST_IMG
+chmod +x demo_test.sh
+./demo_test.sh
 ```
 2. Input arguments: (see full input arguments via ```python test.py -h ```)
 ```bash
-usage: test.py [-h] --id ID [--suffix SUFFIX] [--arch_encoder ARCH_ENCODER]
-               [--arch_decoder ARCH_DECODER] [--fc_dim FC_DIM] --test_img
-               TEST_IMG [--num_val NUM_VAL] [--batch_size BATCH_SIZE]
-               [--imgSize IMGSIZE] [--segSize SEGSIZE] [--num_class NUM_CLASS]
-               [--ckpt CKPT] [--visualize VISUALIZE] [--result RESULT]
+usage: test.py [-h] --test_img TEST_IMG --model_path MODEL_PATH
+               [--suffix SUFFIX] [--result RESULT]
+               [--arch_encoder ARCH_ENCODER] [--arch_decoder ARCH_DECODER]
+               [--fc_dim FC_DIM] [--num_class NUM_CLASS] [--imgSize IMGSIZE]
+               [--segSize SEGSIZE]
 ```
 
 ## Reference
