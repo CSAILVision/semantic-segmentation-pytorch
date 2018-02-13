@@ -54,7 +54,7 @@ def visualize_test_result(img, pred, args):
     img = (img.numpy().transpose((1, 2, 0)) * 255).astype(np.uint8)
 
     # prediction
-    pred_ = np.argmax(pred.numpy(), axis=0) + 1
+    pred_ = np.argmax(pred.numpy(), axis=0)
     pred_color = colorEncode(pred_, colors)
 
     # aggregate images and save
@@ -112,11 +112,16 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    # Model related arguments
-    parser.add_argument('--id', required=True,
-                        help="a name for identifying the model to load")
+    # Path related arguments
+    parser.add_argument('--test_img', required=True)
+    parser.add_argument('--model_path', required=True,
+                        help='folder to model path')
     parser.add_argument('--suffix', default='_best.pth',
                         help="which snapshot to load")
+    parser.add_argument('--result', default='.',
+                        help='folder to output visualization results')
+
+    # Model related arguments
     parser.add_argument('--arch_encoder', default='resnet34_dilated8',
                         help="architecture of net_encoder")
     parser.add_argument('--arch_decoder', default='c1_bilinear',
@@ -124,39 +129,26 @@ if __name__ == '__main__':
     parser.add_argument('--fc_dim', default=512, type=int,
                         help='number of features between encoder and decoder')
 
-    # Path related arguments
-    parser.add_argument('--test_img', required=True)
-
     # Data related arguments
-    parser.add_argument('--num_val', default=-1, type=int,
-                        help='number of images to evalutate')
     parser.add_argument('--num_class', default=150, type=int,
                         help='number of classes')
-    parser.add_argument('--batch_size', default=1, type=int,
-                        help='batchsize')
     parser.add_argument('--imgSize', default=384, type=int,
                         help='resize input image')
     parser.add_argument('--segSize', default=-1, type=int,
                         help='output image size, -1 = keep original')
 
-    # Misc arguments
-    parser.add_argument('--ckpt', default='./ckpt',
-                        help='folder to output checkpoints')
-    parser.add_argument('--visualize', default=0,
-                        help='output visualization?')
-    parser.add_argument('--result', default='.',
-                        help='folder to output visualization results')
-
     args = parser.parse_args()
-    print(args)
+    print("Input arguments:")
+    for key, val in vars(args).items():
+        print("{:16} {}".format(key, val))
 
     # scales for evaluation
     args.scales = (0.5, 0.75, 1, 1.25, 1.5)
 
     # absolute paths of model weights
-    args.weights_encoder = os.path.join(args.ckpt, args.id,
+    args.weights_encoder = os.path.join(args.model_path,
                                         'encoder' + args.suffix)
-    args.weights_decoder = os.path.join(args.ckpt, args.id,
+    args.weights_decoder = os.path.join(args.model_path,
                                         'decoder' + args.suffix)
 
     main(args)
