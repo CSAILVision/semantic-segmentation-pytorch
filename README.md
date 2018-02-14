@@ -126,6 +126,8 @@ usage: eval.py [-h] --id ID [--suffix SUFFIX] [--arch_encoder ARCH_ENCODER]
 chmod +x demo_test.sh
 ./demo_test.sh
 ```
+This script downloads pretrained models and a test image, runs the test script, and saves predicted segmentation (.png) to the working directory.
+
 2. Input arguments: (see full input arguments via ```python test.py -h ```)
 ```bash
 usage: test.py [-h] --test_img TEST_IMG --model_path MODEL_PATH
