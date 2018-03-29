@@ -61,7 +61,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
 ### Main Results
 |               | MS Test | Mean IoU   | Accuracy | Overall | Training Time | 
 |---------------|:----:|:----:|:-----:|:--------------:|:-------:|
-|ResNet-50_dilated8 + c1_bilinear_deepsup | No | - | - | - | 27.5 hours | 
+|ResNet-50_dilated8 + c1_bilinear_deepsup | No | 34.88 | 76.54 | 55.71 | 27.5 hours | 
 |ResNet-50_dilated8 + psp_bilinear_deepsup | No | 40.60 | 79.66 | 60.13 | 33.4 hours |
 |Same as above | Yes | 41.31 | 80.14 | 60.73 | Same as above | 
 |ResNet-101_dilated8 + c1_bilinear_deepsup | No | - | - | - | hours | 

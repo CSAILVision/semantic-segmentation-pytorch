@@ -229,7 +229,7 @@ if __name__ == '__main__':
                         help='number of classes')
     parser.add_argument('--workers', default=16, type=int,
                         help='number of data loading workers')
-    parser.add_argument('--imgSize', default=[300,350,400,450,500,550], 
+    parser.add_argument('--imgSize', default=[300,375,450,525,600], 
                         help='input image size of short edge (int or list)')
     parser.add_argument('--imgMaxSize', default=1000, type=int,
                         help='maximum input image size of long edge')
