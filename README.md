@@ -52,7 +52,7 @@ Decoder:
 - psp_bilinear_deepsup (psp_bilinear + deep supervision trick)
 
 ***Coming soon***:
-- UPerNet based on Feature Pyramid Network (FPN) and Pyramid Pooling Module (PPM), with down-sampling rate of 4, 8 and 16. It doesn't need dilated convolution, a operator that is time-and-memory consuming. It is comparable or even better compared with pspnet *with bells and whistles*, while requires much shorter training time and less GPU memory.
+- UPerNet based on Feature Pyramid Network (FPN) and Pyramid Pooling Module (PPM), with down-sampling rate of 4, 8 and 16. It doesn't need dilated convolution, a operator that is time-and-memory consuming. *Without bells and whistles*, it is comparable or even better compared with PSPNet, while requires much shorter training time and less GPU memory.
 
 
 ## Performance:
