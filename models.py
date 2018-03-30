@@ -4,10 +4,11 @@ import torchvision
 import resnet
 from lib.nn import SynchronizedBatchNorm2d
 
+
 class SegmentationModuleBase(nn.Module):
     def __init__(self):
         super(SegmentationModuleBase, self).__init__()
-    
+
     def pixel_acc(self, pred, label):
         _, preds = torch.max(pred, dim=1)
         valid = (label >= 0).long()
@@ -16,6 +17,7 @@ class SegmentationModuleBase(nn.Module):
         acc = acc_sum.float() / (pixel_sum.float() + 1e-10)
         return acc
 
+
 class SegmentationModule(SegmentationModuleBase):
     def __init__(self, net_enc, net_dec, crit, deep_sup_scale=None):
         super(SegmentationModule, self).__init__()
@@ -23,29 +25,30 @@ class SegmentationModule(SegmentationModuleBase):
         self.decoder = net_dec
         self.crit = crit
         self.deep_sup_scale = deep_sup_scale
-    
+
     def forward(self, feed_dict, *, segSize=None):
         if segSize is None: # training
             if self.deep_sup_scale is not None: # use deep supervision technique
                 (pred, pred_deepsup) = self.decoder(self.encoder(feed_dict['img_data'], return_feature_maps=True))
             else:
                 pred = self.decoder(self.encoder(feed_dict['img_data'], return_feature_maps=False))
-            
+
             loss = self.crit(pred, feed_dict['seg_label'])
             if self.deep_sup_scale is not None:
                 loss_deepsup = self.crit(pred_deepsup, feed_dict['seg_label'])
                 loss = loss + loss_deepsup * self.deep_sup_scale
-            
+
             acc = self.pixel_acc(pred, feed_dict['seg_label'])
             return loss, acc
         else: # inference
             pred = self.decoder(self.encoder(feed_dict['img_data']), segSize=segSize)
             return pred
 
+
 def conv3x3(in_planes, out_planes, stride=1, has_bias=False):
     "3x3 convolution with padding"
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                    padding=1, bias=has_bias)
+                     padding=1, bias=has_bias)
 
 
 def conv3x3_bn_relu(in_planes, out_planes, stride=1):
@@ -100,35 +103,40 @@ class ModelBuilder():
         else:
             raise Exception('Architecture undefined!')
 
-        #net_encoder.apply(self.weights_init)
+        # net_encoder.apply(self.weights_init)
         if len(weights) > 0:
             print('Loading weights for net_encoder')
             net_encoder.load_state_dict(
                 torch.load(weights, map_location=lambda storage, loc: storage))
         return net_encoder
 
-    def build_decoder(self, arch='psp_bilinear_deepsup', fc_dim=512, num_class=150,
-                        weights='', use_softmax=False):
+    def build_decoder(self, arch='psp_bilinear_deepsup',
+                      fc_dim=512, num_class=150,
+                      weights='', use_softmax=False):
         if arch == 'c1_bilinear_deepsup':
-            net_decoder = C1BilinearDeepSup(num_class=num_class,
-                                     fc_dim=fc_dim,
-                                     use_softmax=use_softmax)
+            net_decoder = C1BilinearDeepSup(
+                num_class=num_class,
+                fc_dim=fc_dim,
+                use_softmax=use_softmax)
         elif arch == 'c1_bilinear':
-            net_decoder = C1Bilinear(num_class=num_class,
-                                     fc_dim=fc_dim,
-                                     use_softmax=use_softmax)
+            net_decoder = C1Bilinear(
+                num_class=num_class,
+                fc_dim=fc_dim,
+                use_softmax=use_softmax)
         elif arch == 'psp_bilinear':
-            net_decoder = PSPBilinear(num_class=num_class,
-                                      fc_dim=fc_dim,
-                                      use_softmax=use_softmax)
+            net_decoder = PSPBilinear(
+                num_class=num_class,
+                fc_dim=fc_dim,
+                use_softmax=use_softmax)
         elif arch == 'psp_bilinear_deepsup':
-            net_decoder = PSPBilinearDeepsup(num_class=num_class,
-                                      fc_dim=fc_dim,
-                                      use_softmax=use_softmax)
+            net_decoder = PSPBilinearDeepsup(
+                num_class=num_class,
+                fc_dim=fc_dim,
+                use_softmax=use_softmax)
         else:
             raise Exception('Architecture undefined!')
 
-        #net_decoder.apply(self.weights_init)
+        # net_decoder.apply(self.weights_init)
         if len(weights) > 0:
             print('Loading weights for net_decoder')
             net_decoder.load_state_dict(
@@ -216,7 +224,7 @@ class ResnetDilated(nn.Module):
 
     def forward(self, x, return_feature_maps=False):
         conv_out = []
-        
+
         x = self.relu1(self.bn1(self.conv1(x)))
         x = self.relu2(self.bn2(self.conv2(x)))
         x = self.relu3(self.bn3(self.conv3(x)))
@@ -226,10 +234,11 @@ class ResnetDilated(nn.Module):
         x = self.layer2(x); conv_out.append(x);
         x = self.layer3(x); conv_out.append(x);
         x = self.layer4(x); conv_out.append(x);
-        
+
         if return_feature_maps:
             return conv_out
         return [x]
+
 
 # last conv, bilinear upsample
 class C1BilinearDeepSup(nn.Module):
@@ -243,26 +252,26 @@ class C1BilinearDeepSup(nn.Module):
         # last conv
         self.conv_last = nn.Conv2d(fc_dim // 4, num_class, 1, 1, 0)
         self.conv_last_deepsup = nn.Conv2d(fc_dim // 4, num_class, 1, 1, 0)
-    
+
     def forward(self, conv_out, segSize=None):
         conv5 = conv_out[-1]
 
         x = self.cbr(conv5)
         x = self.conv_last(x)
 
-        if self.use_softmax: # is True during inference
+        if self.use_softmax:  # is True during inference
             x = nn.functional.upsample(x, size=segSize, mode='bilinear')
-            x = nn.functional.softmax(x)
+            x = nn.functional.softmax(x, dim=1)
             return x
-        
+
         # deep sup
         conv4 = conv_out[-2]
         _ = self.cbr_deepsup(conv4)
         _ = self.conv_last_deepsup(_)
-        
-        x = nn.functional.log_softmax(x)
-        _ = nn.functional.log_softmax(_)
-        
+
+        x = nn.functional.log_softmax(x, dim=1)
+        _ = nn.functional.log_softmax(_, dim=1)
+
         return (x, _)
 
 
@@ -271,9 +280,9 @@ class C1Bilinear(nn.Module):
     def __init__(self, num_class=150, fc_dim=2048, use_softmax=False):
         super(C1Bilinear, self).__init__()
         self.use_softmax = use_softmax
-        
+
         self.cbr = conv3x3_bn_relu(fc_dim, fc_dim // 4, 1)
-        
+
         # last conv
         self.conv_last = nn.Conv2d(fc_dim // 4, num_class, 1, 1, 0)
 
@@ -284,17 +293,16 @@ class C1Bilinear(nn.Module):
 
         if self.use_softmax: # is True during inference
             x = nn.functional.upsample(x, size=segSize, mode='bilinear')
-            x = nn.functional.softmax(x)
-            return x
-        
-        x = nn.functional.log_softmax(x)
-        
+            x = nn.functional.softmax(x, dim=1)
+        else:
+            x = nn.functional.log_softmax(x, dim=1)
+
         return x
 
 
 # pyramid pooling, bilinear upsample
 class PSPBilinear(nn.Module):
-    def __init__(self, num_class=150, fc_dim=4096, 
+    def __init__(self, num_class=150, fc_dim=4096,
                  use_softmax=False, pool_scales=(1, 2, 3, 6)):
         super(PSPBilinear, self).__init__()
         self.use_softmax = use_softmax
@@ -308,7 +316,7 @@ class PSPBilinear(nn.Module):
                 nn.ReLU(inplace=True)
             ))
         self.psp = nn.ModuleList(self.psp)
-        
+
         self.conv_last = nn.Sequential(
             nn.Conv2d(fc_dim+len(pool_scales)*512, 512,
                       kernel_size=3, padding=1, bias=False),
@@ -332,18 +340,17 @@ class PSPBilinear(nn.Module):
 
         x = self.conv_last(psp_out)
 
-        if self.use_softmax: # is True during inference
+        if self.use_softmax:  # is True during inference
             x = nn.functional.upsample(x, size=segSize, mode='bilinear')
-            x = nn.functional.softmax(x)
-            return x
-        
-        x = nn.functional.log_softmax(x)
+            x = nn.functional.softmax(x, dim=1)
+        else:
+            x = nn.functional.log_softmax(x, dim=1)
         return x
 
 
 # pyramid pooling, bilinear upsample
 class PSPBilinearDeepsup(nn.Module):
-    def __init__(self, num_class=150, fc_dim=4096, 
+    def __init__(self, num_class=150, fc_dim=4096,
                  use_softmax=False, pool_scales=(1, 2, 3, 6)):
         super(PSPBilinearDeepsup, self).__init__()
         self.use_softmax = use_softmax
@@ -358,7 +365,7 @@ class PSPBilinearDeepsup(nn.Module):
             ))
         self.psp = nn.ModuleList(self.psp)
         self.cbr_deepsup = conv3x3_bn_relu(fc_dim // 2, fc_dim // 4, 1)
-        
+
         self.conv_last = nn.Sequential(
             nn.Conv2d(fc_dim+len(pool_scales)*512, 512,
                       kernel_size=3, padding=1, bias=False),
@@ -369,7 +376,7 @@ class PSPBilinearDeepsup(nn.Module):
         )
         self.conv_last_deepsup = nn.Conv2d(fc_dim // 4, num_class, 1, 1, 0)
         self.dropout_deepsup = nn.Dropout2d(0.1)
-    
+
     def forward(self, conv_out, segSize=None):
         conv5 = conv_out[-1]
 
@@ -384,9 +391,9 @@ class PSPBilinearDeepsup(nn.Module):
 
         x = self.conv_last(psp_out)
 
-        if self.use_softmax: # is True during inference
+        if self.use_softmax:  # is True during inference
             x = nn.functional.upsample(x, size=segSize, mode='bilinear')
-            x = nn.functional.softmax(x)
+            x = nn.functional.softmax(x, dim=1)
             return x
 
         # deep sup
@@ -394,9 +401,8 @@ class PSPBilinearDeepsup(nn.Module):
         _ = self.cbr_deepsup(conv4)
         _ = self.dropout_deepsup(_)
         _ = self.conv_last_deepsup(_)
-        
-        x = nn.functional.log_softmax(x)
-        _ = nn.functional.log_softmax(_)
-        
-        return (x, _)
 
+        x = nn.functional.log_softmax(x, dim=1)
+        _ = nn.functional.log_softmax(_, dim=1)
+
+        return (x, _)

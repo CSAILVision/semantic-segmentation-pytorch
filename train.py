@@ -22,15 +22,6 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def adjust_learning_rate(optimizers, cur_iter, args):
-    args.running_lr_encoder = args.lr_encoder * ((1. - float(cur_iter) / args.max_iters) ** args.lr_pow)
-    args.running_lr_decoder = args.lr_decoder * ((1. - float(cur_iter) / args.max_iters) ** args.lr_pow)
-    
-    (optimizer_encoder, optimizer_decoder) = optimizers
-    for param_group in optimizer_encoder.param_groups:
-        param_group['lr'] = args.running_lr_encoder
-    for param_group in optimizer_decoder.param_groups:
-        param_group['lr'] = args.running_lr_decoder
 
 # train one epoch
 def train(segmentation_module, iterator, optimizers, history, epoch, args):
@@ -46,14 +37,14 @@ def train(segmentation_module, iterator, optimizers, history, epoch, args):
     for i in range(args.epoch_iters):
         batch_data = next(iterator)
         data_time.update(time.time() - tic)
-      
+
         segmentation_module.zero_grad()
 
         # forward pass
         loss, acc = segmentation_module(batch_data)
         loss = loss.mean()
         acc = acc.mean()
-        
+
         # Backward
         loss.backward()
         for optimizer in optimizers:
@@ -64,14 +55,14 @@ def train(segmentation_module, iterator, optimizers, history, epoch, args):
         tic = time.time()
 
         # update average loss and acc
-        ave_total_loss.update(loss.data[0])
-        ave_acc.update(acc.data[0]*100)
+        ave_total_loss.update(loss.item())
+        ave_acc.update(acc.item()*100)
 
         # calculate accuracy, and display
         if i % args.disp_iter == 0:
             print('Epoch: [{}][{}/{}], Time: {:.2f}, Data: {:.2f}, '
-                    'lr_encoder: {:.6f}, lr_decoder: {:.6f}, '
-                    'Accurarcy: {:4.2f}, Loss: {:.6f}'
+                  'lr_encoder: {:.6f}, lr_decoder: {:.6f}, '
+                  'Accurarcy: {:4.2f}, Loss: {:.6f}'
                   .format(epoch, i, args.epoch_iters,
                           batch_time.average(), data_time.average(),
                           args.running_lr_encoder, args.running_lr_decoder,
@@ -79,12 +70,13 @@ def train(segmentation_module, iterator, optimizers, history, epoch, args):
 
             fractional_epoch = epoch - 1 + 1. * i / args.epoch_iters
             history['train']['epoch'].append(fractional_epoch)
-            history['train']['loss'].append(loss.data[0])
-            history['train']['acc'].append(acc.data[0])
+            history['train']['loss'].append(loss.item())
+            history['train']['acc'].append(acc.item())
 
         # adjust learning rate
         cur_iter = i + (epoch - 1) * args.epoch_iters
         adjust_learning_rate(optimizers, cur_iter, args)
+
 
 def checkpoint(nets, history, args, epoch_num):
     print('Saving checkpoints...')
@@ -117,31 +109,48 @@ def create_optimizers(nets, args):
     return (optimizer_encoder, optimizer_decoder)
 
 
+def adjust_learning_rate(optimizers, cur_iter, args):
+    scale_running_lr = ((1. - float(cur_iter) / args.max_iters) ** args.lr_pow)
+    args.running_lr_encoder = args.lr_encoder * scale_running_lr
+    args.running_lr_decoder = args.lr_decoder * scale_running_lr
+
+    (optimizer_encoder, optimizer_decoder) = optimizers
+    for param_group in optimizer_encoder.param_groups:
+        param_group['lr'] = args.running_lr_encoder
+    for param_group in optimizer_decoder.param_groups:
+        param_group['lr'] = args.running_lr_decoder
+
+
 def main(args):
     # Network Builders
     builder = ModelBuilder()
-    net_encoder = builder.build_encoder(arch=args.arch_encoder,
-                                        fc_dim=args.fc_dim,
-                                        weights=args.weights_encoder)
-    net_decoder = builder.build_decoder(arch=args.arch_decoder,
-                                        fc_dim=args.fc_dim,
-                                        num_class=args.num_class,
-                                        weights=args.weights_decoder)
+    net_encoder = builder.build_encoder(
+        arch=args.arch_encoder,
+        fc_dim=args.fc_dim,
+        weights=args.weights_encoder)
+    net_decoder = builder.build_decoder(
+        arch=args.arch_decoder,
+        fc_dim=args.fc_dim,
+        num_class=args.num_class,
+        weights=args.weights_decoder)
 
     crit = nn.NLLLoss(ignore_index=-1)
 
     if args.arch_decoder.endswith('deepsup'):
-        segmentation_module = SegmentationModule(net_encoder, net_decoder, crit, args.deep_sup_scale)
+        segmentation_module = SegmentationModule(
+            net_encoder, net_decoder, crit, args.deep_sup_scale)
     else:
-        segmentation_module = SegmentationModule(net_encoder, net_decoder, crit)
+        segmentation_module = SegmentationModule(
+            net_encoder, net_decoder, crit)
 
     # Dataset and Loader
-    dataset_train = TrainDataset(args.list_train, args, batch_per_gpu=args.batch_size_per_gpu)
-    
+    dataset_train = TrainDataset(
+        args.list_train, args, batch_per_gpu=args.batch_size_per_gpu)
+
     loader_train = torchdata.DataLoader(
         dataset_train,
-        batch_size=args.num_gpus, # we have modified data_parallel
-        shuffle=False, # we do not use this param
+        batch_size=args.num_gpus,  # we have modified data_parallel
+        shuffle=False,  # we do not use this param
         collate_fn=user_scattered_collate,
         num_workers=int(args.workers),
         drop_last=True,
@@ -154,9 +163,10 @@ def main(args):
 
     # load nets into gpu
     if args.num_gpus > 1:
-        segmentation_module = UserScatteredDataParallel(segmentation_module,
-                                      device_ids=range(args.num_gpus))
-        # For sync bn 
+        segmentation_module = UserScatteredDataParallel(
+            segmentation_module,
+            device_ids=range(args.num_gpus))
+        # For sync bn
         patch_replication_callback(segmentation_module)
     segmentation_module.cuda()
 
@@ -172,7 +182,6 @@ def main(args):
 
         # checkpointing
         checkpoint(nets, history, args, epoch)
-
 
     print('Training Done!')
 
@@ -229,7 +238,7 @@ if __name__ == '__main__':
                         help='number of classes')
     parser.add_argument('--workers', default=16, type=int,
                         help='number of data loading workers')
-    parser.add_argument('--imgSize', default=[300,375,450,525,600], 
+    parser.add_argument('--imgSize', default=[300,375,450,525,600],
                         help='input image size of short edge (int or list)')
     parser.add_argument('--imgMaxSize', default=1000, type=int,
                         help='maximum input image size of long edge')
@@ -239,7 +248,6 @@ if __name__ == '__main__':
                         help='downsampling rate of the segmentation label')
     parser.add_argument('--random_flip', default=True, type=bool,
                         help='if horizontally flip images when training')
-
 
     # Misc arguments
     parser.add_argument('--seed', default=304, type=int, help='manual seed')
@@ -257,7 +265,7 @@ if __name__ == '__main__':
     args.max_iters = args.epoch_iters * args.num_epoch
     args.running_lr_encoder = args.lr_encoder
     args.running_lr_decoder = args.lr_decoder
-    
+
     args.id += '-' + str(args.arch_encoder)
     args.id += '-' + str(args.arch_decoder)
     args.id += '-ngpus' + str(args.num_gpus)

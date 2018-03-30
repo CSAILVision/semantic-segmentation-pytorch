@@ -19,6 +19,7 @@ from lib.utils import as_numpy, mark_volatile
 import lib.utils.data as torchdata
 import cv2
 
+
 def visualize_result(data, preds, args):
     colors = loadmat('data/color150.mat')['colors']
     (img, seg, info) = data
@@ -32,10 +33,10 @@ def visualize_result(data, preds, args):
     # aggregate images and save
     im_vis = np.concatenate((img, seg_color, pred_color),
                             axis=1).astype(np.uint8)
-    
+
     img_name = info.split('/')[-1]
     cv2.imwrite(os.path.join(args.result,
-                        img_name.replace('.jpg', '.png')), im_vis)
+                img_name.replace('.jpg', '.png')), im_vis)
 
 
 def evaluate(segmentation_module, loader, args):
@@ -56,7 +57,7 @@ def evaluate(segmentation_module, loader, args):
             segSize = (seg_label.shape[0], seg_label.shape[1])
             pred = torch.zeros(1, args.num_class, segSize[0], segSize[1])
             pred = Variable(pred).cuda()
-            
+
             for img in img_resized_list:
                 feed_dict = batch_data.copy()
                 feed_dict['img_data'] = img
@@ -67,10 +68,10 @@ def evaluate(segmentation_module, loader, args):
                 # forward pass
                 pred_tmp = segmentation_module(feed_dict, segSize=segSize)
                 pred = pred + pred_tmp / len(args.imgSize)
-            
+
             _, preds = torch.max(pred.data.cpu(), dim=1)
             preds = as_numpy(preds.squeeze(0))
-        
+
         # calculate accuracy
         acc, pix = accuracy(preds, seg_label)
         intersection, union = intersectionAndUnion(preds, seg_label, args.num_class)
@@ -84,7 +85,7 @@ def evaluate(segmentation_module, loader, args):
         # visualization
         if args.visualize:
             visualize_result((batch_data['img_ori'], seg_label, batch_data['info']), preds, args)
-        
+
     iou = intersection_meter.sum / (union_meter.sum + 1e-10)
     for i, _iou in enumerate(iou):
         print('class [{}], IoU: {}'.format(i, _iou))
@@ -96,7 +97,7 @@ def evaluate(segmentation_module, loader, args):
 
 def main(args):
     torch.cuda.set_device(args.gpu_id)
-    
+
     # Network Builders
     builder = ModelBuilder()
     net_encoder = builder.build_encoder(arch=args.arch_encoder,
@@ -110,10 +111,10 @@ def main(args):
     crit = nn.NLLLoss(ignore_index=-1)
 
     segmentation_module = SegmentationModule(net_encoder, net_decoder, crit)
-    
+
     # Dataset and Loader
-    dataset_val = ValDataset(args.list_val, args,
-                          max_sample=args.num_val)
+    dataset_val = ValDataset(
+        args.list_val, args, max_sample=args.num_val)
     loader_val = torchdata.DataLoader(
         dataset_val,
         batch_size=args.batch_size,
@@ -123,7 +124,7 @@ def main(args):
         drop_last=True)
 
     segmentation_module.cuda()
-    
+
     # Main loop
     evaluate(segmentation_module, loader_val, args)
 
