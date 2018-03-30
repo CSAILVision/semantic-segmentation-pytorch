@@ -33,6 +33,9 @@ def dict_gather(outputs, target_device, dim=0):
     def gather_map(outputs):
         out = outputs[0]
         if isinstance(out, Variable):
+            # MJY(20180330) HACK:: force nr_dims > 0
+            if out.dim() == 0:
+                outputs = [o.unsqueeze(0) for o in outputs]
             return Gather.apply(target_device, dim, *outputs)
         elif out is None:
             return None
