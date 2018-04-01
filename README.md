@@ -10,12 +10,12 @@ http://sceneparsing.csail.mit.edu/model/
 
 <img src="./teaser/ADE_val_00000278.png" width="900"/>
 <img src="./teaser/ADE_val_00001519.png" width="900"/>
-From left to right: Test Image, Ground Truth, Predicted Result
+[From left to right: Test Image, Ground Truth, Predicted Result]
 
 ## Highlights [NEW!]
 
 ### Syncronized Batch Normalization on PyTorch
-This module differs from the built-in PyTorch BatchNorm as the mean and standard-deviation are reduced across all devices during training. The importance of synchronized batch normalization in object detection has been recently proved with a an extensive analysis in the paper [MegDet: A Large Mini-Batch Object Detector](https://arxiv.org/abs/1711.07240). And we empirically find that it is also important for segmentation.
+This module differs from the built-in PyTorch BatchNorm as the mean and standard-deviation are reduced across all devices during training. The importance of synchronized batch normalization in object detection has been recently proved with a an extensive analysis in the paper [MegDet: A Large Mini-Batch Object Detector](https://arxiv.org/abs/1711.07240), and we empirically find that it is also important for segmentation.
 
 The implementation is reasonable due to the following reasons:
 - This implementation is in pure-python. No C++ extra extension libs.
@@ -25,23 +25,21 @@ The implementation is reasonable due to the following reasons:
 ***To the best knowledge, it is the first pure-python implementation of sync bn on PyTorch, and also the first one completely compatible with PyTorch. It is also efficient, only 20% to 30% slower than un-sync bn.*** We especially thank [Jiayuan Mao](http://vccy.xyz/) for his kind contributions. For more details about the implementation and usage, refer to [Synchronized-BatchNorm-PyTorch](https://github.com/vacancy/Synchronized-BatchNorm-PyTorch).
 
 ### Dynamic scales of input for training with multiple GPUs 
-Different from image classification task, where the input images are resized to a certain scale such as 224x224 or 229x229, it is better for semantic segmentation and object detection networks that the aspect ratios of input images remain what they original are. It is not trivial on PyTorch, because the dataloader loads a pile of images first, then the `nn.DataParallel` module automatically splits them to multiple GPUs. That is, the images are concatenated first, then distributed. The concatenation, of course, requires the images to be of the same size.
+Different from image classification task, where the input images are resized to a fixed scale such as 224x224, it is better to keep original aspect ratios of input images for semantic segmentation and object detection networks.
 
-Alternatively, we re-implement the `DataParallel` module, and make it support distributing data to multiple GPUs in python dict. You are free to put a lot of stuff in a dict. At the same time, the dataloader also operates differently. *Now the batch size of a dataloader always equals to the number of GPUs*, cause each elements will be sent to a GPU later. In this way, for example, if you'd like to put 2 images on each GPU, its the dataloader's job. We also need to make it compatible with the multi-processing. Note that the file index for the multi-processing dataloader is stored on the master process, which is in contradict to our goal that each worker maintains its own file list. So we use a trick that although the master process still gives dataloader an index for `__getitem__` function, we just ignore such request and send a random batch dict. Also, *the multiple workers forked by the dataloader all have the same seed*, you will find that multiple workers will yield exactly the same data, if we use the above-mentioned trick directly. Therefore, we add one line of code which sets the defaut seed for `numpy.random` before activating multiple worker in dataloader.
+So we re-implement the `DataParallel` module, and make it support distributing data to multiple GPUs in python dict. At the same time, the dataloader also operates differently. *Now the batch size of a dataloader always equals to the number of GPUs*, each element will be sent to a GPU. It is also compatible with multi-processing. Note that the file index for the multi-processing dataloader is stored on the master process, which is in contradict to our goal that each worker maintains its own file list. So we use a trick that although the master process still gives dataloader an index for `__getitem__` function, we just ignore such request and send a random batch dict. Also, *the multiple workers forked by the dataloader all have the same seed*, you will find that multiple workers will yield exactly the same data, if we use the above-mentioned trick directly. Therefore, we add one line of code which sets the defaut seed for `numpy.random` before activating multiple worker in dataloader.
 
 
 ## Supported models
 We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling.
 
-Encoder:
+Encoder: (resnetXX_dilatedYY: customized resnetXX with dilated convolutions, output feature map is 1/YY of input size.)
 - resnet50_dilated16
 - resnet50_dilated8
 
 ***Coming soon***:
 - resnet101_dilated16
 - resnet101_dilated8
-
-(resnetXX_dilatedYY: customized resnetXX with dilated convolutions, output feature map is 1/YY of input size.)
 
 Decoder:
 - c1_bilinear (1 conv + bilinear upsample)
@@ -56,18 +54,47 @@ Decoder:
 ## Performance:
 IMPORTANT: We use our self-trained base model on ImageNet. The model takes the input in BGR form (consistent with opencv) instead of RGB form as used by default implementation of PyTorch. The base model will be automatically downloaded when needed.
 
-### Main Results
-|               | MS Test | Mean IoU   | Accuracy | Overall | Training Time | 
-|---------------|:----:|:----:|:-----:|:--------------:|:-------:|
-|ResNet-50_dilated8 + c1_bilinear_deepsup | No | 34.88 | 76.54 | 55.71 | 27.5 hours | 
-|ResNet-50_dilated8 + psp_bilinear_deepsup | No | 40.60 | 79.66 | 60.13 | 33.4 hours |
-|Same as above | Yes | 41.31 | 80.14 | 60.73 | Same as above | 
-|ResNet-101_dilated8 + c1_bilinear_deepsup | No | - | - | - | hours | 
-|ResNet-101_dilated8 + psp_bilinear_deepsup | No | - | - | - | hours |
-|Same as above | Yes | - | - | - | Same as above | 
-|UPerNet-50 (coming soon!) | No | - | - | - | hours | 
-|UPerNet-50 (coming soon!) | Yes| - | - | - | Same as above | 
-
+<table><tbody>
+    <th valign="bottom">Architecture</th>
+    <th valign="bottom">MS Test</th>
+    <th valign="bottom">Mean IoU</th>
+    <th valign="bottom">Pixel Accuracy</th>
+    <th valign="bottom">Overall Score</th>
+    <th valign="bottom">Training Time</th>
+    <tr>
+        <td>ResNet-50_dilated8 + c1_bilinear_deepsup</td>
+        <td>No</td><td>34.88</td><td>76.54</td><td>55.71</td>
+        <td>27.5 hours</td>
+    </tr>
+    <tr>
+        <td rowspan="2">ResNet-50_dilated8 + psp_bilinear_deepsup</td>
+        <td>No</td><td>40.60</td><td>79.66</td><td>60.13</td>
+        <td rowspan="2">33.4 hours</td>
+    </tr>
+    <tr>
+        <td>Yes</td><td>41.31</td><td>80.14</td><td>60.73</td>
+    </tr>
+    <tr>
+        <td>ResNet-101_dilated8 + c1_bilinear_deepsup</td>
+        <td>-</td><td>-</td><td>-</td><td>-</td>
+        <td>- hours</td>
+    </tr>
+    <tr>
+        <td>ResNet-101_dilated8 + psp_bilinear_deepsup</td>
+        <td>-</td><td>-</td><td>-</td><td>-</td>
+        <td>- hours</td>
+    </tr>
+    <tr>
+        <td>UPerNet-50 (coming soon!)</td>
+        <td>-</td><td>-</td><td>-</td><td>-</td>
+        <td>- hours</td>
+    </tr>
+    <tr>
+        <td>UPerNet-101 (coming soon!)</td>
+        <td>-</td><td>-</td><td>-</td><td>-</td>
+        <td>- hours</td>
+    </tr>
+</tbody></table>
 
 ## Environment
 The code is developed under the following configurations.
