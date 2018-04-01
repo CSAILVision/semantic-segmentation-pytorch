@@ -8,116 +8,96 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from scipy.io import loadmat
-from scipy.misc import imsave
-from scipy.ndimage import zoom
 # Our libs
-from dataset import Dataset
-from models import ModelBuilder
+from dataset import ValDataset
+from models import ModelBuilder, SegmentationModule
 from utils import AverageMeter, colorEncode, accuracy, intersectionAndUnion
+from lib.nn import user_scattered_collate, async_copy_to
+from lib.utils import as_numpy, mark_volatile
+import lib.utils.data as torchdata
+import cv2
 
 
-# forward func for evaluation
-def forward_multiscale(nets, batch_data, args):
-    (net_encoder, net_decoder, crit) = nets
-    (imgs, segs, infos) = batch_data
-
-    segSize = (segs.size(1), segs.size(2))
-    pred = torch.zeros(imgs.size(0), args.num_class, segs.size(1), segs.size(2))
-    pred = Variable(pred, volatile=True).cuda()
-
-    for scale in args.scales:
-        imgs_scale = zoom(imgs.numpy(),
-                          (1., 1., scale, scale),
-                          order=1,
-                          prefilter=False,
-                          mode='nearest')
-
-        # feed input data
-        input_img = Variable(torch.from_numpy(imgs_scale),
-                             volatile=True).cuda()
-
-        # forward
-        pred_scale = net_decoder(net_encoder(input_img), segSize=segSize)
-
-        # average the probability
-        pred = pred + pred_scale / len(args.scales)
-
-    pred = torch.log(pred)
-
-    label_seg = Variable(segs, volatile=True).cuda()
-    err = crit(pred, label_seg)
-    return pred, err
-
-
-def visualize_result(batch_data, pred, args):
+def visualize_result(data, preds, args):
     colors = loadmat('data/color150.mat')['colors']
-    (imgs, segs, infos) = batch_data
-    for j in range(len(infos)):
-        # get/recover image
-        # img = imread(os.path.join(args.root_img, infos[j]))
-        img = imgs[j].clone()
-        for t, m, s in zip(img,
-                           [0.485, 0.456, 0.406],
-                           [0.229, 0.224, 0.225]):
-            t.mul_(s).add_(m)
-        img = (img.numpy().transpose((1, 2, 0)) * 255).astype(np.uint8)
+    (img, seg, info) = data
 
-        # segmentation
-        lab = segs[j].numpy()
-        lab_color = colorEncode(lab, colors)
+    # segmentation
+    seg_color = colorEncode(seg, colors)
 
-        # prediction
-        pred_ = np.argmax(pred.data.cpu()[j].numpy(), axis=0)
-        pred_color = colorEncode(pred_, colors)
+    # prediction
+    pred_color = colorEncode(preds, colors)
 
-        # aggregate images and save
-        im_vis = np.concatenate((img, lab_color, pred_color),
-                                axis=1).astype(np.uint8)
-        imsave(os.path.join(args.result,
-                            infos[j].replace('/', '_')
-                            .replace('.jpg', '.png')), im_vis)
+    # aggregate images and save
+    im_vis = np.concatenate((img, seg_color, pred_color),
+                            axis=1).astype(np.uint8)
+
+    img_name = info.split('/')[-1]
+    cv2.imwrite(os.path.join(args.result,
+                img_name.replace('.jpg', '.png')), im_vis)
 
 
-def evaluate(nets, loader, args):
-    loss_meter = AverageMeter()
+def evaluate(segmentation_module, loader, args):
     acc_meter = AverageMeter()
     intersection_meter = AverageMeter()
     union_meter = AverageMeter()
 
-    # switch to eval mode
-    for net in nets:
-        net.eval()
+    segmentation_module.eval()
 
     for i, batch_data in enumerate(loader):
-        # forward pass
-        pred, err = forward_multiscale(nets, batch_data, args)
-        loss_meter.update(err.data[0])
+        # process data
+        batch_data = batch_data[0]
+        seg_label = as_numpy(batch_data['seg_label'][0])
+
+        img_resized_list = batch_data['img_data']
+
+        with torch.no_grad():
+            segSize = (seg_label.shape[0], seg_label.shape[1])
+            pred = torch.zeros(1, args.num_class, segSize[0], segSize[1])
+            pred = Variable(pred).cuda()
+
+            for img in img_resized_list:
+                feed_dict = batch_data.copy()
+                feed_dict['img_data'] = img
+                del feed_dict['img_ori']
+                del feed_dict['info']
+                feed_dict = async_copy_to(feed_dict, args.gpu_id)
+
+                # forward pass
+                pred_tmp = segmentation_module(feed_dict, segSize=segSize)
+                pred = pred + pred_tmp / len(args.imgSize)
+
+            _, preds = torch.max(pred.data.cpu(), dim=1)
+            preds = as_numpy(preds.squeeze(0))
 
         # calculate accuracy
-        acc, pix = accuracy(batch_data, pred)
-        intersection, union = intersectionAndUnion(batch_data, pred,
-                                                   args.num_class)
+        acc, pix = accuracy(preds, seg_label)
+        intersection, union = intersectionAndUnion(preds, seg_label, args.num_class)
         acc_meter.update(acc, pix)
         intersection_meter.update(intersection)
         union_meter.update(union)
-        print('[{}] iter {}, loss: {}, accuracy: {}'
+        print('[{}] iter {}, accuracy: {}'
               .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                      i, err.data[0], acc))
+                      i, acc))
 
         # visualization
         if args.visualize:
-            visualize_result(batch_data, pred, args)
+            visualize_result(
+                (batch_data['img_ori'], seg_label, batch_data['info']),
+                preds, args)
 
     iou = intersection_meter.sum / (union_meter.sum + 1e-10)
     for i, _iou in enumerate(iou):
         print('class [{}], IoU: {}'.format(i, _iou))
 
     print('[Eval Summary]:')
-    print('Loss: {}, Mean IoU: {:.4}, Accurarcy: {:.2f}%'
-          .format(loss_meter.average(), iou.mean(), acc_meter.average()*100))
+    print('Mean IoU: {:.4}, Accurarcy: {:.2f}%'
+          .format(iou.mean(), acc_meter.average()*100))
 
 
 def main(args):
+    torch.cuda.set_device(args.gpu_id)
+
     # Network Builders
     builder = ModelBuilder()
     net_encoder = builder.build_encoder(arch=args.arch_encoder,
@@ -125,28 +105,28 @@ def main(args):
                                         weights=args.weights_encoder)
     net_decoder = builder.build_decoder(arch=args.arch_decoder,
                                         fc_dim=args.fc_dim,
-                                        segSize=args.segSize,
                                         weights=args.weights_decoder,
                                         use_softmax=True)
 
-    crit = nn.NLLLoss2d(ignore_index=-1)
+    crit = nn.NLLLoss(ignore_index=-1)
+
+    segmentation_module = SegmentationModule(net_encoder, net_decoder, crit)
 
     # Dataset and Loader
-    dataset_val = Dataset(args.list_val, args,
-                          max_sample=args.num_val, is_train=0)
-    loader_val = torch.utils.data.DataLoader(
+    dataset_val = ValDataset(
+        args.list_val, args, max_sample=args.num_val)
+    loader_val = torchdata.DataLoader(
         dataset_val,
         batch_size=args.batch_size,
         shuffle=False,
-        num_workers=2,
+        collate_fn=user_scattered_collate,
+        num_workers=5,
         drop_last=True)
 
-    nets = (net_encoder, net_decoder, crit)
-    for net in nets:
-        net.cuda()
+    segmentation_module.cuda()
 
     # Main loop
-    evaluate(nets, loader_val, args)
+    evaluate(segmentation_module, loader_val, args)
 
     print('Evaluation Done!')
 
@@ -156,22 +136,20 @@ if __name__ == '__main__':
     # Model related arguments
     parser.add_argument('--id', required=True,
                         help="a name for identifying the model to load")
-    parser.add_argument('--suffix', default='_best.pth',
+    parser.add_argument('--suffix', default='_epoch_20.pth',
                         help="which snapshot to load")
-    parser.add_argument('--arch_encoder', default='resnet34_dilated8',
+    parser.add_argument('--arch_encoder', default='resnet50_dilated8',
                         help="architecture of net_encoder")
-    parser.add_argument('--arch_decoder', default='c1_bilinear',
+    parser.add_argument('--arch_decoder', default='psp_bilinear_deepsup',
                         help="architecture of net_decoder")
-    parser.add_argument('--fc_dim', default=512, type=int,
+    parser.add_argument('--fc_dim', default=2048, type=int,
                         help='number of features between encoder and decoder')
 
     # Path related arguments
     parser.add_argument('--list_val',
-                        default='./data/ADE20K_object150_val.txt')
-    parser.add_argument('--root_img',
-                        default='./data/ADEChallengeData2016/images')
-    parser.add_argument('--root_seg',
-                        default='./data/ADEChallengeData2016/annotations')
+                        default='./data/validation.odgt')
+    parser.add_argument('--root_dataset',
+                        default='./data/')
 
     # Data related arguments
     parser.add_argument('--num_val', default=-1, type=int,
@@ -179,32 +157,39 @@ if __name__ == '__main__':
     parser.add_argument('--num_class', default=150, type=int,
                         help='number of classes')
     parser.add_argument('--batch_size', default=1, type=int,
-                        help='batchsize')
-    parser.add_argument('--imgSize', default=-1, type=int,
-                        help='input image size, -1 = keep original')
-    parser.add_argument('--segSize', default=-1, type=int,
-                        help='output image size, -1 = keep original')
+                        help='batchsize. current only supports 1')
+    parser.add_argument('--imgSize', default=[450], type=list,
+                        help='list of input image sizes.'
+                             'for multiscale testing, e.g. [300,400,500,600]')
+    parser.add_argument('--imgMaxSize', default=1000, type=int,
+                        help='maximum input image size of long edge')
+    parser.add_argument('--padding_constant', default=8, type=int,
+                        help='maxmimum downsampling rate of the network')
+    parser.add_argument('--segm_downsampling_rate', default=8, type=int,
+                        help='downsampling rate of the segmentation label')
 
     # Misc arguments
     parser.add_argument('--ckpt', default='./ckpt',
                         help='folder to output checkpoints')
-    parser.add_argument('--visualize', default=0,
+    parser.add_argument('--visualize', action='store_true',
                         help='output visualization?')
     parser.add_argument('--result', default='./result',
                         help='folder to output visualization results')
+    parser.add_argument('--gpu_id', default=0, type=int,
+                        help='gpu_id for evaluation')
 
     args = parser.parse_args()
     print(args)
 
-    # scales for evaluation
-    # args.scales = (1, )
-    args.scales = (0.5, 0.75, 1, 1.25, 1.5)
+    # torch.cuda.set_device(args.gpu_id)
 
     # absolute paths of model weights
     args.weights_encoder = os.path.join(args.ckpt, args.id,
                                         'encoder' + args.suffix)
     args.weights_decoder = os.path.join(args.ckpt, args.id,
                                         'decoder' + args.suffix)
+    assert os.path.exists(args.weights_encoder) and \
+        os.path.exists(args.weights_encoder), 'checkpoint does not exitst!'
 
     args.result = os.path.join(args.result, args.id)
     if not os.path.isdir(args.result):
