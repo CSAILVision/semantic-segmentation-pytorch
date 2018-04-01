@@ -136,7 +136,7 @@ if __name__ == '__main__':
     # Model related arguments
     parser.add_argument('--id', required=True,
                         help="a name for identifying the model to load")
-    parser.add_argument('--suffix', default='_epoch_13.pth',
+    parser.add_argument('--suffix', default='_epoch_20.pth',
                         help="which snapshot to load")
     parser.add_argument('--arch_encoder', default='resnet50_dilated8',
                         help="architecture of net_encoder")
@@ -159,7 +159,8 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', default=1, type=int,
                         help='batchsize. current only supports 1')
     parser.add_argument('--imgSize', default=[450], type=list,
-                        help='list of input image sizes. For multi scale testing just put parameters like [300,400,500,600].')
+                        help='list of input image sizes.'
+                             'for multiscale testing, e.g. [300,400,500,600]')
     parser.add_argument('--imgMaxSize', default=1000, type=int,
                         help='maximum input image size of long edge')
     parser.add_argument('--padding_constant', default=8, type=int,

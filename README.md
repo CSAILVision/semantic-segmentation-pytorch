@@ -8,16 +8,14 @@ https://github.com/CSAILVision/sceneparsing
 Pretrained models can be found at:
 http://sceneparsing.csail.mit.edu/model/
 
-<img src="./teaser/ADE_val_00000045.png" width="900"/>
-<img src="./teaser/ADE_val_00001130.png" width="900"/>
+<img src="./teaser/ADE_val_00000278.png" width="900"/>
+<img src="./teaser/ADE_val_00001519.png" width="900"/>
 From left to right: Test Image, Ground Truth, Predicted Result
 
-## Highlights
+## Highlights [NEW!]
 
 ### Syncronized Batch Normalization on PyTorch
-This module differs from the built-in PyTorch BatchNorm as the mean and standard-deviation are reduced across all devices during training. For example, when one uses `nn.DataParallel` to wrap the network during training, PyTorch's implementation normalizes the tensor on each device using the statistics only on that device, which accelerated the computation and is also easy to implement, but the statistics might be inaccurate. Instead, in this synchronized version, the statistics will be computed over all training samples distributed on multiple devices. 
-
-The importance of synchronized batch normalization in object detection has been recently proved with a an extensive analysis in the paper [MegDet: A Large Mini-Batch Object Detector](https://arxiv.org/abs/1711.07240). And we empirically find that it is also important for segmentation.
+This module differs from the built-in PyTorch BatchNorm as the mean and standard-deviation are reduced across all devices during training. The importance of synchronized batch normalization in object detection has been recently proved with a an extensive analysis in the paper [MegDet: A Large Mini-Batch Object Detector](https://arxiv.org/abs/1711.07240). And we empirically find that it is also important for segmentation.
 
 The implementation is reasonable due to the following reasons:
 - This implementation is in pure-python. No C++ extra extension libs.
@@ -115,7 +113,7 @@ usage: train.py [-h] [--id ID] [--arch_encoder ARCH_ENCODER]
 ## Evaluation
 1. Evaluate a trained network on the validation set:
 ```bash
-python3 eval.py --id MODEL_ID
+python3 eval.py --id MODEL_ID --suffix SUFFIX
 ```
 
 2. Input arguments: (see full input arguments via ```python3 eval.py -h ```)
@@ -127,13 +125,13 @@ usage: eval.py [-h] --id ID [--suffix SUFFIX] [--arch_encoder ARCH_ENCODER]
                [--batch_size BATCH_SIZE] [--imgSize IMGSIZE]
                [--imgMaxSize IMGMAXSIZE] [--padding_constant PADDING_CONSTANT]
                [--segm_downsampling_rate SEGM_DOWNSAMPLING_RATE] [--ckpt CKPT]
-               [--visualize VISUALIZE] [--result RESULT] [--gpu_id GPU_ID]
+               [--visualize] [--result RESULT] [--gpu_id GPU_ID]
 ```
 
 
 ## Reference
 
-If you find the code or pre-trained models useful, please cite the following paper:
+If you find the code or pre-trained models useful, please cite the following papers:
 
 Scene Parsing through ADE20K Dataset. B. Zhou, H. Zhao, X. Puig, S. Fidler, A. Barriuso and A. Torralba. Computer Vision and Pattern Recognition (CVPR), 2017. (http://people.csail.mit.edu/bzhou/publication/scene-parse-camera-ready.pdf)
 
