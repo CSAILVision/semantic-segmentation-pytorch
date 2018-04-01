@@ -8,9 +8,6 @@ import argparse
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
-from scipy.io import loadmat
-from scipy.misc import imresize, imsave
 # Our libs
 from dataset import TrainDataset, ValDataset
 from models import ModelBuilder, SegmentationModule
@@ -18,9 +15,9 @@ from utils import AverageMeter, colorEncode, accuracy
 from lib.nn import UserScatteredDataParallel, user_scattered_collate, patch_replication_callback
 import lib.utils.data as torchdata
 
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
+# import matplotlib
+# matplotlib.use('Agg')
+# import matplotlib.pyplot as plt
 
 
 # train one epoch
@@ -270,15 +267,14 @@ if __name__ == '__main__':
     args.id += '-' + str(args.arch_decoder)
     args.id += '-ngpus' + str(args.num_gpus)
     args.id += '-batchSize' + str(args.batch_size)
-    #args.id += '-imgSize' + str(args.imgSize)
     args.id += '-imgMaxSize' + str(args.imgMaxSize)
-    args.id += '-padding_constant' + str(args.padding_constant)
-    args.id += '-segm_downsampling_rate' + str(args.segm_downsampling_rate)
-    args.id += '-lr_encoder' + str(args.lr_encoder)
-    args.id += '-lr_decoder' + str(args.lr_decoder)
+    args.id += '-paddingConst' + str(args.padding_constant)
+    args.id += '-segmDownsampleRate' + str(args.segm_downsampling_rate)
+    args.id += '-LR_encoder' + str(args.lr_encoder)
+    args.id += '-LR_decoder' + str(args.lr_decoder)
     args.id += '-epoch' + str(args.num_epoch)
     args.id += '-decay' + str(args.weight_decay)
-    args.id += '-fix_bn' + str(args.fix_bn)
+    args.id += '-fixBN' + str(args.fix_bn)
     print('Model ID: {}'.format(args.id))
 
     args.ckpt = os.path.join(args.ckpt, args.id)

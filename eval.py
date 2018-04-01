@@ -8,8 +8,6 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from scipy.io import loadmat
-from scipy.misc import imsave
-from scipy.ndimage import zoom
 # Our libs
 from dataset import ValDataset
 from models import ModelBuilder, SegmentationModule
@@ -84,7 +82,9 @@ def evaluate(segmentation_module, loader, args):
 
         # visualization
         if args.visualize:
-            visualize_result((batch_data['img_ori'], seg_label, batch_data['info']), preds, args)
+            visualize_result(
+                (batch_data['img_ori'], seg_label, batch_data['info']),
+                preds, args)
 
     iou = intersection_meter.sum / (union_meter.sum + 1e-10)
     for i, _iou in enumerate(iou):
@@ -136,7 +136,7 @@ if __name__ == '__main__':
     # Model related arguments
     parser.add_argument('--id', required=True,
                         help="a name for identifying the model to load")
-    parser.add_argument('--suffix', default='_best.pth',
+    parser.add_argument('--suffix', default='_epoch_13.pth',
                         help="which snapshot to load")
     parser.add_argument('--arch_encoder', default='resnet50_dilated8',
                         help="architecture of net_encoder")
@@ -170,7 +170,7 @@ if __name__ == '__main__':
     # Misc arguments
     parser.add_argument('--ckpt', default='./ckpt',
                         help='folder to output checkpoints')
-    parser.add_argument('--visualize', default=0,
+    parser.add_argument('--visualize', action='store_true',
                         help='output visualization?')
     parser.add_argument('--result', default='./result',
                         help='folder to output visualization results')
@@ -180,17 +180,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
     print(args)
 
-    #torch.cuda.set_device(args.gpu_id)
-
-    # scales for evaluation
-    # args.scales = (1, )
-    # args.scales = (0.5, 0.75, 1, 1.25, 1.5)
+    # torch.cuda.set_device(args.gpu_id)
 
     # absolute paths of model weights
     args.weights_encoder = os.path.join(args.ckpt, args.id,
                                         'encoder' + args.suffix)
     args.weights_decoder = os.path.join(args.ckpt, args.id,
                                         'decoder' + args.suffix)
+    assert os.path.exists(args.weights_encoder) and \
+        os.path.exists(args.weights_encoder), 'checkpoint does not exitst!'
 
     args.result = os.path.join(args.result, args.id)
     if not os.path.isdir(args.result):
