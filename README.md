@@ -34,12 +34,11 @@ So we re-implement the `DataParallel` module, and make it support distributing d
 We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling.
 
 Encoder: (resnetXX_dilatedYY: customized resnetXX with dilated convolutions, output feature map is 1/YY of input size.)
-- resnet50_dilated16
-- resnet50_dilated8
+- resnet34_dilated16, resnet34_dilated8
+- resnet50_dilated16, resnet50_dilated8
 
 ***Coming soon***:
-- resnet101_dilated16
-- resnet101_dilated8
+- resnet101_dilated16, resnet101_dilated8
 
 Decoder:
 - c1_bilinear (1 conv + bilinear upsample)
@@ -109,9 +108,9 @@ The code is developed under the following configurations.
 chmod +x download_ADE20K.sh
 ./download_ADE20K.sh
 ```
-2. Train a network (default: resnet50_dilated8_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
+2. Train a network (default: ResNet-50_dilated8 + psp_bilinear_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
 ```bash
-python3 train.py
+python3 train.py --num_gpus NUM_GPUS
 ```
 
 3. Input arguments: (see full input arguments via ```python3 train.py -h ```)
@@ -138,7 +137,7 @@ usage: train.py [-h] [--id ID] [--arch_encoder ARCH_ENCODER]
 
 
 ## Evaluation
-1. Evaluate a trained network on the validation set:
+1. Evaluate a trained network on the validation set. Add ```--visualize``` option to output visualizations shown in teaser.
 ```bash
 python3 eval.py --id MODEL_ID --suffix SUFFIX
 ```
