@@ -61,17 +61,11 @@ def conv3x3_bn_relu(in_planes, out_planes, stride=1):
 
 class ModelBuilder():
     # custom weights initialization
-    '''
     def weights_init(self, m):
         classname = m.__class__.__name__
         if classname.find('Conv') != -1:
-            m.weight.data.normal_(0.0, 0.001)
-        elif classname.find('BatchNorm') != -1:
-            m.weight.data.normal_(1.0, 0.02)
-            m.bias.data.fill_(0)
-        elif classname.find('Linear') != -1:
-            m.weight.data.normal_(0.0, 0.0001)
-    '''
+            nn.init.kaiming_normal(m.weight.data)
+
 
     def build_encoder(self, arch='resnet50_dilated8', fc_dim=512, weights=''):
         pretrained = True if len(weights) == 0 else False
@@ -100,6 +94,10 @@ class ModelBuilder():
             orig_resnet = resnet.__dict__['resnet50'](pretrained=pretrained)
             net_encoder = ResnetDilated(orig_resnet,
                                         dilate_scale=16)
+        elif arch == 'resnet101_dilated8':
+            orig_resnet = resnet.__dict__['resnet101'](pretrained=pretrained)
+            net_encoder = ResnetDilated(orig_resnet,
+                                        dilate_scale=8)
         else:
             raise Exception('Architecture undefined!')
 
@@ -136,7 +134,7 @@ class ModelBuilder():
         else:
             raise Exception('Architecture undefined!')
 
-        # net_decoder.apply(self.weights_init)
+        net_decoder.apply(self.weights_init)
         if len(weights) > 0:
             print('Loading weights for net_decoder')
             net_decoder.load_state_dict(
