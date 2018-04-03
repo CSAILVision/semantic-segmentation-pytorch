@@ -157,8 +157,6 @@ def main(args):
 
     # create loader iterator
     iterator_train = iter(loader_train)
-    from IPython import embed
-    embed()
 
     # load nets into gpu
     if args.num_gpus > 1:
