@@ -52,8 +52,8 @@ def train(segmentation_module, iterator, optimizers, history, epoch, args):
         tic = time.time()
 
         # update average loss and acc
-        ave_total_loss.update(loss.item())
-        ave_acc.update(acc.item()*100)
+        ave_total_loss.update(loss.data[0])
+        ave_acc.update(acc.data[0]*100)
 
         # calculate accuracy, and display
         if i % args.disp_iter == 0:
@@ -67,8 +67,8 @@ def train(segmentation_module, iterator, optimizers, history, epoch, args):
 
             fractional_epoch = epoch - 1 + 1. * i / args.epoch_iters
             history['train']['epoch'].append(fractional_epoch)
-            history['train']['loss'].append(loss.item())
-            history['train']['acc'].append(acc.item())
+            history['train']['loss'].append(loss.data[0])
+            history['train']['acc'].append(acc.data[0])
 
         # adjust learning rate
         cur_iter = i + (epoch - 1) * args.epoch_iters
