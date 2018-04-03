@@ -36,7 +36,7 @@ class TrainDataset(torchdata.Dataset):
 
         self.list_sample = [json.loads(x.rstrip()) for x in open(odgt, 'r')]
 
-        np.random.shuffle(self.list_sample)
+        self.if_shuffled = False
         if max_sample > 0:
             self.list_sample = self.list_sample[0:max_sample]
         self.num_sample = len(self.list_sample)
@@ -69,6 +69,11 @@ class TrainDataset(torchdata.Dataset):
         return batch_records
 
     def __getitem__(self, index):
+        # NOTE: random shuffle for the first time. shuffle in __init__ is useless
+        if not self.if_shuffled:
+            np.random.shuffle(self.list_sample)
+            self.if_shuffled = True
+
         # get sub-batch candidates
         batch_records = self._get_sub_batch()
         
