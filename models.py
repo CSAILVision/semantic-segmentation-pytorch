@@ -105,7 +105,7 @@ class ModelBuilder():
         if len(weights) > 0:
             print('Loading weights for net_encoder')
             net_encoder.load_state_dict(
-                torch.load(weights, map_location=lambda storage, loc: storage))
+                torch.load(weights, map_location=lambda storage, loc: storage), strict=False)
         return net_encoder
 
     def build_decoder(self, arch='psp_bilinear_deepsup',
@@ -138,7 +138,7 @@ class ModelBuilder():
         if len(weights) > 0:
             print('Loading weights for net_decoder')
             net_decoder.load_state_dict(
-                torch.load(weights, map_location=lambda storage, loc: storage))
+                torch.load(weights, map_location=lambda storage, loc: storage), strict=False)
         return net_decoder
 
 
