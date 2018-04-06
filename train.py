@@ -83,11 +83,14 @@ def checkpoint(nets, history, args, epoch_num):
     dict_encoder = net_encoder.state_dict()
     dict_decoder = net_decoder.state_dict()
 
+    dict_encoder_save = {k: v for k, v in dict_encoder.items() if not (k.endswith('_tmp_running_mean') or k.endswith('tmp_running_var'))}
+    dict_decoder_save = {k: v for k, v in dict_decoder.items() if not (k.endswith('_tmp_running_mean') or k.endswith('tmp_running_var'))}
+    
     torch.save(history,
                '{}/history_{}'.format(args.ckpt, suffix_latest))
-    torch.save(dict_encoder,
+    torch.save(dict_encoder_save,
                '{}/encoder_{}'.format(args.ckpt, suffix_latest))
-    torch.save(dict_decoder,
+    torch.save(dict_decoder_save,
                '{}/decoder_{}'.format(args.ckpt, suffix_latest))
 
 
@@ -174,7 +177,7 @@ def main(args):
     # Main loop
     history = {'train': {'epoch': [], 'loss': [], 'acc': []}}
 
-    for epoch in range(1, args.num_epoch + 1):
+    for epoch in range(args.start_epoch, args.num_epoch + 1):
         train(segmentation_module, iterator_train, optimizers, history, epoch, args)
 
         # checkpointing
@@ -214,6 +217,8 @@ if __name__ == '__main__':
                         help='input batch size')
     parser.add_argument('--num_epoch', default=20, type=int,
                         help='epochs to train for')
+    parser.add_argument('--start_epoch', default=1, type=int,
+                        help='epoch to start training. useful if continue from a checkpoint')
     parser.add_argument('--epoch_iters', default=5000, type=int,
                         help='iterations of each epoch (irrelevant to batch size)')
     parser.add_argument('--optim', default='SGD', help='optimizer')

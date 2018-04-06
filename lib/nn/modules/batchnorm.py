@@ -36,7 +36,7 @@ _MasterMessage = collections.namedtuple('_MasterMessage', ['sum', 'inv_std'])
 
 
 class _SynchronizedBatchNorm(_BatchNorm):
-    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True):
+    def __init__(self, num_features, eps=1e-5, momentum=0.001, affine=True):
         super(_SynchronizedBatchNorm, self).__init__(num_features, eps=eps, momentum=momentum, affine=affine)
 
         self._sync_master = SyncMaster(self._data_parallel_master)
@@ -44,6 +44,14 @@ class _SynchronizedBatchNorm(_BatchNorm):
         self._is_parallel = False
         self._parallel_id = None
         self._slave_pipe = None
+
+        # customed batch norm statistics
+        self._iter = 1
+        self._moving_average_fraction = 1. - momentum
+        self.register_buffer('_tmp_running_mean', torch.zeros(self.num_features))
+        self.register_buffer('_tmp_running_var', torch.ones(self.num_features))
+        self._tmp_running_mean = self.running_mean.clone()
+        self._tmp_running_var = self.running_var.clone()
 
     def forward(self, input):
         # If it is not parallel computation or is in evaluation mode, use PyTorch's implementation.
@@ -108,6 +116,10 @@ class _SynchronizedBatchNorm(_BatchNorm):
 
         return outputs
 
+    def _add_weighted(self, dest, delta, alpha=1, beta=1, bias=0):
+        """return *dest* by `dest := dest*alpha + delta*beta + bias`"""
+        return dest * alpha + delta * beta + bias
+
     def _compute_mean_std(self, sum_, ssum, size):
         """Compute the mean and standard-deviation with sum and square-sum. This method
         also maintains the moving average on the master device."""
@@ -117,8 +129,12 @@ class _SynchronizedBatchNorm(_BatchNorm):
         unbias_var = sumvar / (size - 1)
         bias_var = sumvar / size
 
-        self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mean.data
-        self.running_var = (1 - self.momentum) * self.running_var + self.momentum * unbias_var.data
+        self._tmp_running_mean = self._add_weighted(self._tmp_running_mean, mean.data, alpha=self._moving_average_fraction)
+        self._tmp_running_var = self._add_weighted(self._tmp_running_var, unbias_var.data, alpha=self._moving_average_fraction)
+        self._iter = self._add_weighted(self._iter, 1, alpha=self._moving_average_fraction)
+
+        self.running_mean = self._tmp_running_mean / self._iter
+        self.running_var = self._tmp_running_var / self._iter
 
         return mean, bias_var.clamp(self.eps) ** -0.5
 
