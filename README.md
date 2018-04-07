@@ -43,8 +43,8 @@ Encoder: (resnetXX_dilatedYY: customized resnetXX with dilated convolutions, out
 Decoder:
 - c1_bilinear (1 conv + bilinear upsample)
 - c1_bilinear_deepsup (c1_blinear + deep supervision trick)
-- psp_bilinear (pyramid pooling + bilinear upsample, see PSPNet paper for details)
-- psp_bilinear_deepsup (psp_bilinear + deep supervision trick)
+- ppm_bilinear (pyramid pooling + bilinear upsample, see PSPNet paper for details)
+- ppm_bilinear_deepsup (psp_bilinear + deep supervision trick)
 
 ***Coming soon***:
 - UPerNet based on Feature Pyramid Network (FPN) and Pyramid Pooling Module (PPM), with down-sampling rate of 4, 8 and 16. It doesn't need dilated convolution, a operator that is time-and-memory consuming. *Without bells and whistles*, it is comparable or even better compared with PSPNet, while requires much shorter training time and less GPU memory.
@@ -79,7 +79,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>- hours</td>
     </tr>
     <tr>
-        <td>ResNet-101_dilated8 + psp_bilinear_deepsup</td>
+        <td>ResNet-101_dilated8 + ppm_bilinear_deepsup</td>
         <td>-</td><td>-</td><td>-</td><td>-</td>
         <td>- hours</td>
     </tr>
