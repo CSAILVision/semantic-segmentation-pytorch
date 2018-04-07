@@ -193,7 +193,7 @@ if __name__ == '__main__':
                         help="a name for identifying the model")
     parser.add_argument('--arch_encoder', default='resnet50_dilated8',
                         help="architecture of net_encoder")
-    parser.add_argument('--arch_decoder', default='psp_bilinear_deepsup',
+    parser.add_argument('--arch_decoder', default='ppm_bilinear_deepsup',
                         help="architecture of net_decoder")
     parser.add_argument('--weights_encoder', default='',
                         help="weights to finetune net_encoder")
