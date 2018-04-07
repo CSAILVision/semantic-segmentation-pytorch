@@ -95,9 +95,11 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     </tr>
 </tbody></table>
 
+The speed is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GPU memory), except for ResNet-101_dilated8, which is benchmarked on a server with 8 NVIDIA Tesla P40 GPUS (22GB GPU memory), because of the insufficient memory issue when using dilated conv on a very deep network.
+
 ## Environment
 The code is developed under the following configurations.
-- Hardware: 2-8 Pascal Titan X GPUs (change ```[--num_gpus NUM_GPUS]``` accordingly)
+- Hardware: 2-8 GPUs (with at least 12G GPU memories) (change ```[--num_gpus NUM_GPUS]``` accordingly)
 - Software: Ubuntu 16.04.3 LTS, CUDA 8.0, ***Python3.5***, ***PyTorch 0.4.0***
 
 *Warning:* We don't support the outdated Python 2 anymore. PyTorch 0.4.0 or higher is required to run the codes.
