@@ -164,8 +164,6 @@ class ValDataset(torchdata.Dataset):
         self.imgMaxSize = opt.imgMaxSize
         # max down sampling rate of network to avoid rounding during conv or pooling
         self.padding_constant = opt.padding_constant
-        # down sampling rate of segm labe
-        self.segm_downsampling_rate = opt.segm_downsampling_rate 
 
         # mean and std
         self.img_transform = transforms.Compose([

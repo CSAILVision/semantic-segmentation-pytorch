@@ -137,7 +137,7 @@ usage: train.py [-h] [--id ID] [--arch_encoder ARCH_ENCODER]
 
 
 ## Evaluation
-1. Evaluate a trained network on the validation set. Add ```--visualize``` option to output visualizations shown in teaser.
+1. Evaluate a trained network on the validation set. Add ```--visualize``` option to output visualizations as shown in teaser.
 ```bash
 python3 eval.py --id MODEL_ID --suffix SUFFIX
 ```
