@@ -104,6 +104,25 @@ The code is developed under the following configurations.
 
 *Warning:* We don't support the outdated Python 2 anymore. PyTorch 0.4.0 or higher is required to run the codes.
 
+## Quick start: Test on an image using our trained model 
+1. Here is a simple demo to do inference on a single image:
+```bash
+chmod +x demo_test.sh
+./demo_test.sh
+```
+This script downloads trained models and a test image, runs the test script, and saves predicted segmentation (.png) to the working directory.
+
+2. Input arguments: (see full input arguments via python3 test.py -h)
+```bash
+usage: test.py [-h] --test_img TEST_IMG --model_path MODEL_PATH                                                                                                                  [--suffix SUFFIX] [--arch_encoder ARCH_ENCODER]
+               [--arch_decoder ARCH_DECODER] [--fc_dim FC_DIM]
+               [--num_val NUM_VAL] [--num_class NUM_CLASS]
+               [--batch_size BATCH_SIZE] [--imgSize IMGSIZE [IMGSIZE ...]]
+               [--imgMaxSize IMGMAXSIZE] [--padding_constant PADDING_CONSTANT]
+               [--segm_downsampling_rate SEGM_DOWNSAMPLING_RATE]
+               [--result RESULT] [--gpu_id GPU_ID]
+```
+
 ## Training
 1. Download the ADE20K scene parsing dataset:
 ```bash
