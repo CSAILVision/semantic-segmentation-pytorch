@@ -6,7 +6,7 @@ wget -P $MODEL_PATH http://sceneparsing.csail.mit.edu/model/pytorch/baseline-res
 wget -P $MODEL_PATH http://sceneparsing.csail.mit.edu/model/pytorch/baseline-resnet50_dilated8-ppm_bilinear_deepsup/decoder_epoch_20.pth
 wget -P $RESULT_PATH http://sceneparsing.csail.mit.edu//data/ADEChallengeData2016/images/validation/ADE_val_00000278.jpg
 
-python -u test.py \
+python3 -u test.py \
   --model_path $MODEL_PATH \
   --test_img ./ADE_val_00000278.jpg \
   --arch_encoder resnet50_dilated8 \
