@@ -439,16 +439,19 @@ class UPerNet(nn.Module):
         self.use_softmax = use_softmax
 
         # PPM Module
-        self.psp = []
+        self.ppm_pooling = []
+        self.ppm_conv = []
+
         for scale in pool_scales:
-            self.psp.append(nn.Sequential(
-                nn.AdaptiveAvgPool2d(scale),
+            self.ppm_pooling.append(nn.AdaptiveAvgPool2d(scale))
+            self.ppm_conv.append(nn.Sequential(
                 nn.Conv2d(fc_dim, 512, kernel_size=1, bias=False),
                 SynchronizedBatchNorm2d(512),
                 nn.ReLU(inplace=True)
             ))
-        self.psp = nn.ModuleList(self.psp)
-        self.psp_conv = conv3x3_bn_relu(fc_dim + len(pool_scales)*512, fpn_dim, 1)
+        self.ppm_pooling = nn.ModuleList(self.ppm_pooling)
+        self.ppm_conv = nn.ModuleList(self.ppm_conv)
+        self.ppm_last_conv = conv3x3_bn_relu(fc_dim + len(pool_scales)*512, fpn_dim, 1)
 
         # FPN Module
         self.fpn_in = []
@@ -477,14 +480,14 @@ class UPerNet(nn.Module):
         conv5 = conv_out[-1]
 
         input_size = conv5.size()
-        psp_out = [conv5]
-        for pool_scale in self.psp:
-            psp_out.append(nn.functional.upsample(
+        ppm_out = [conv5]
+        for pool_scale, pool_conv in zip(self.ppm_pooling, self.ppm_conv):
+            ppm_out.append(pool_conv(nn.functional.upsample(
                 pool_scale(conv5),
                 (input_size[2], input_size[3]),
-                mode='bilinear'))
-        psp_out = torch.cat(psp_out, 1)
-        f = self.psp_conv(psp_out)
+                mode='bilinear')))
+        ppm_out = torch.cat(ppm_out, 1)
+        f = self.ppm_last_conv(ppm_out)
 
         fpn_feature_list = [f]
         for i in reversed(range(len(conv_out) - 1)):

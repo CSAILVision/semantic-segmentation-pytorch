@@ -36,7 +36,7 @@ _MasterMessage = collections.namedtuple('_MasterMessage', ['sum', 'inv_std'])
 
 
 class _SynchronizedBatchNorm(_BatchNorm):
-    def __init__(self, num_features, eps=1e-5, momentum=0.001, affine=True):
+    def __init__(self, num_features, eps=1e-5, momentum=0.005, affine=True):
         super(_SynchronizedBatchNorm, self).__init__(num_features, eps=eps, momentum=momentum, affine=affine)
 
         self._sync_master = SyncMaster(self._data_parallel_master)
@@ -46,10 +46,10 @@ class _SynchronizedBatchNorm(_BatchNorm):
         self._slave_pipe = None
 
         # customed batch norm statistics
-        self._iter = 1
         self._moving_average_fraction = 1. - momentum
         self.register_buffer('_tmp_running_mean', torch.zeros(self.num_features))
         self.register_buffer('_tmp_running_var', torch.ones(self.num_features))
+        self.register_buffer('_running_iter', torch.ones(1))
         self._tmp_running_mean = self.running_mean.clone()
         self._tmp_running_var = self.running_var.clone()
 
@@ -131,10 +131,10 @@ class _SynchronizedBatchNorm(_BatchNorm):
 
         self._tmp_running_mean = self._add_weighted(self._tmp_running_mean, mean.data, alpha=self._moving_average_fraction)
         self._tmp_running_var = self._add_weighted(self._tmp_running_var, unbias_var.data, alpha=self._moving_average_fraction)
-        self._iter = self._add_weighted(self._iter, 1, alpha=self._moving_average_fraction)
+        self._running_iter = self._add_weighted(self._running_iter, 1, alpha=self._moving_average_fraction)
 
-        self.running_mean = self._tmp_running_mean / self._iter
-        self.running_var = self._tmp_running_var / self._iter
+        self.running_mean = self._tmp_running_mean / self._running_iter
+        self.running_var = self._tmp_running_var / self._running_iter
 
         return mean, bias_var.clamp(self.eps) ** -0.5
 
