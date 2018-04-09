@@ -232,7 +232,6 @@ class ValDataset(torchdata.Dataset):
 
 class TestDataset(torchdata.Dataset):
     def __init__(self, odgt, opt, max_sample=-1):
-        self.root_dataset = opt.root_dataset
         self.imgSize = opt.imgSize
         self.imgMaxSize = opt.imgMaxSize
         # max down sampling rate of network to avoid rounding during conv or pooling
@@ -245,7 +244,10 @@ class TestDataset(torchdata.Dataset):
             transforms.Normalize(mean=[102.9801, 115.9465, 122.7717], std=[1., 1., 1.])
             ])
 
-        self.list_sample = [json.loads(x.rstrip()) for x in open(odgt, 'r')]
+        if isinstance(odgt, list):
+            self.list_sample = odgt
+        elif isinstance(odgt, str):
+            self.list_sample = [json.loads(x.rstrip()) for x in open(odgt, 'r')]
 
         if max_sample > 0:
             self.list_sample = self.list_sample[0:max_sample]
@@ -253,15 +255,12 @@ class TestDataset(torchdata.Dataset):
         assert self.num_sample > 0
         print('# samples: {}'.format(self.num_sample))
 
-
     def __getitem__(self, index):
         this_record = self.list_sample[index]
         # load image and label
-        image_path = os.path.join(self.root_dataset, this_record['fpath_img'])
-        # segm_path = os.path.join(self.root_dataset, this_record['fpath_segm'])
+        image_path = this_record['fpath_img']
         img = imread(image_path, mode='RGB')
         img = img[:, :, ::-1] # BGR to RGB!!!
-        # segm = imread(segm_path)
 
         ori_height, ori_width, _ = img.shape
 

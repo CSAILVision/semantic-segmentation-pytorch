@@ -40,12 +40,12 @@ def test(segmentation_module, loader, args):
     for i, batch_data in enumerate(loader):
         # process data
         batch_data = batch_data[0]
-        # seg_label = as_numpy(batch_data['seg_label'][0])
+        segSize = (batch_data['img_ori'].shape[0],
+                   batch_data['img_ori'].shape[1])
 
         img_resized_list = batch_data['img_data']
 
         with torch.no_grad():
-            # segSize = (seg_label.shape[0], seg_label.shape[1])
             pred = torch.zeros(1, args.num_class, segSize[0], segSize[1])
             pred = Variable(pred).cuda()
 
@@ -64,13 +64,12 @@ def test(segmentation_module, loader, args):
             preds = as_numpy(preds.squeeze(0))
 
         print('[{}] iter {}'
-              .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+              .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), i))
 
         # visualization
-        if args.visualize:
-            visualize_result(
-                (batch_data['img_ori'], batch_data['info']),
-                preds, args)
+        visualize_result(
+            (batch_data['img_ori'], batch_data['info']),
+            preds, args)
 
 
 def main(args):
@@ -91,8 +90,9 @@ def main(args):
     segmentation_module = SegmentationModule(net_encoder, net_decoder, crit)
 
     # Dataset and Loader
+    list_test = [{'fpath_img': args.test_img}]
     dataset_val = TestDataset(
-        args.list_val, args, max_sample=args.num_val)
+        list_test, args, max_sample=args.num_val)
     loader_val = torchdata.DataLoader(
         dataset_val,
         batch_size=args.batch_size,
@@ -106,7 +106,7 @@ def main(args):
     # Main loop
     test(segmentation_module, loader_val, args)
 
-    print('Evaluation Done!')
+    print('Inference done!')
 
 
 if __name__ == '__main__':
@@ -133,10 +133,10 @@ if __name__ == '__main__':
                         help='number of classes')
     parser.add_argument('--batch_size', default=1, type=int,
                         help='batchsize. current only supports 1')
-    parser.add_argument('--imgSize', default=[300, 400, 500, 600],
+    parser.add_argument('--imgSize', default=[300, 400, 500, 600, 700],
                         nargs='+', type=int,
                         help='list of input image sizes.'
-                             'for multiscale testing, e.g. 300 400 500 600')
+                             'for multiscale testing, e.g. 300 400 500')
     parser.add_argument('--imgMaxSize', default=1000, type=int,
                         help='maximum input image size of long edge')
     parser.add_argument('--padding_constant', default=8, type=int,
