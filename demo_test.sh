@@ -18,7 +18,7 @@ if [ ! -e $TEST_IMG ]; then
   wget -P $RESULT_PATH http://sceneparsing.csail.mit.edu//data/ADEChallengeData2016/images/validation/$TEST_IMG
 fi
 
-python -u test.py \
+python3 -u test.py \
   --model_path $MODEL_PATH \
   --test_img $TEST_IMG \
   --arch_encoder resnet50_dilated8 \
