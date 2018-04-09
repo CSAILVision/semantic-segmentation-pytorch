@@ -43,7 +43,7 @@ Encoder: (resnetXX_dilatedYY: customized resnetXX with dilated convolutions, out
 Decoder:
 - c1_bilinear (1 conv + bilinear upsample)
 - c1_bilinear_deepsup (c1_blinear + deep supervision trick)
-- ppm_bilinear (pyramid pooling + bilinear upsample, see PSPNet paper for details)
+- ppm_bilinear (pyramid pooling + bilinear upsample, see [PSPNet](https://hszhao.github.io/projects/pspnet) paper for details)
 - ppm_bilinear_deepsup (ppm_bilinear + deep supervision trick)
 
 ***Coming soon***:
