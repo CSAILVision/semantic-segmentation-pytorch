@@ -286,8 +286,8 @@ class C1Bilinear(nn.Module):
         # last conv
         self.conv_last = nn.Conv2d(fc_dim // 4, num_class, 1, 1, 0)
 
-    def forward(self, x, segSize=None):
-        conv5 = x[-1]
+    def forward(self, conv_out, segSize=None):
+        conv5 = conv_out[-1]
         x = self.cbr(conv5)
         x = self.conv_last(x)
 
@@ -326,7 +326,7 @@ class PPMBilinear(nn.Module):
             nn.Conv2d(512, num_class, kernel_size=1)
         )
 
-    def forward(self, x, segSize=None):
+    def forward(self, conv_out, segSize=None):
         conv5 = conv_out[-1]
 
         input_size = conv5.size()
