@@ -2,6 +2,7 @@
 import os
 import datetime
 import argparse
+from distutils.version import LooseVersion
 # Numerical libs
 import numpy as np
 import torch
@@ -132,6 +133,9 @@ def main(args):
 
 
 if __name__ == '__main__':
+    assert LooseVersion(torch.__version__) >= LooseVersion('0.4.0'), \
+        'PyTorch>=0.4.0 is required'
+
     parser = argparse.ArgumentParser()
     # Model related arguments
     parser.add_argument('--id', required=True,

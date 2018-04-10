@@ -4,20 +4,16 @@ import time
 # import math
 import random
 import argparse
+from distutils.version import LooseVersion
 # Numerical libs
-import numpy as np
 import torch
 import torch.nn as nn
 # Our libs
-from dataset import TrainDataset, ValDataset
+from dataset import TrainDataset
 from models import ModelBuilder, SegmentationModule
-from utils import AverageMeter, colorEncode, accuracy
+from utils import AverageMeter
 from lib.nn import UserScatteredDataParallel, user_scattered_collate, patch_replication_callback
 import lib.utils.data as torchdata
-
-# import matplotlib
-# matplotlib.use('Agg')
-# import matplotlib.pyplot as plt
 
 
 # train one epoch
@@ -85,7 +81,7 @@ def checkpoint(nets, history, args, epoch_num):
 
     dict_encoder_save = {k: v for k, v in dict_encoder.items() if not (k.endswith('_tmp_running_mean') or k.endswith('tmp_running_var'))}
     dict_decoder_save = {k: v for k, v in dict_decoder.items() if not (k.endswith('_tmp_running_mean') or k.endswith('tmp_running_var'))}
-    
+
     torch.save(history,
                '{}/history_{}'.format(args.ckpt, suffix_latest))
     torch.save(dict_encoder_save,
@@ -187,6 +183,9 @@ def main(args):
 
 
 if __name__ == '__main__':
+    assert LooseVersion(torch.__version__) >= LooseVersion('0.4.0'), \
+        'PyTorch>=0.4.0 is required'
+
     parser = argparse.ArgumentParser()
     # Model related arguments
     parser.add_argument('--id', default='baseline',
