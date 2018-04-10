@@ -61,16 +61,16 @@ def test(segmentation_module, loader, args):
                 pred_tmp = segmentation_module(feed_dict, segSize=segSize)
                 pred = pred + pred_tmp / len(args.imgSize)
 
-        _, preds = torch.max(pred.data.cpu(), dim=1)
-        preds = as_numpy(preds.squeeze(0))
-
-        print('[{}] iter {}'
-              .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), i))
+            _, preds = torch.max(pred.data.cpu(), dim=1)
+            preds = as_numpy(preds.squeeze(0))
 
         # visualization
         visualize_result(
             (batch_data['img_ori'], batch_data['info']),
             preds, args)
+
+        print('[{}] iter {}'
+              .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), i))
 
 
 def main(args):
