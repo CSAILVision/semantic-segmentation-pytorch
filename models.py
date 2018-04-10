@@ -348,7 +348,7 @@ class PSPBilinear(nn.Module):
             nn.Conv2d(512, num_class, kernel_size=1)
         )
 
-    def forward(self, x, segSize=None):
+    def forward(self, conv_out, segSize=None):
         conv5 = conv_out[-1]
 
         input_size = conv5.size()

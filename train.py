@@ -88,9 +88,9 @@ def checkpoint(nets, history, args, epoch_num):
     
     torch.save(history,
                '{}/history_{}'.format(args.ckpt, suffix_latest))
-    torch.save(dict_encoder_save,
+    torch.save(dict_encoder,
                '{}/encoder_{}'.format(args.ckpt, suffix_latest))
-    torch.save(dict_decoder_save,
+    torch.save(dict_decoder,
                '{}/decoder_{}'.format(args.ckpt, suffix_latest))
 
 

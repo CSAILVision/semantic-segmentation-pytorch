@@ -36,7 +36,7 @@ _MasterMessage = collections.namedtuple('_MasterMessage', ['sum', 'inv_std'])
 
 
 class _SynchronizedBatchNorm(_BatchNorm):
-    def __init__(self, num_features, eps=1e-5, momentum=0.005, affine=True):
+    def __init__(self, num_features, eps=1e-5, momentum=0.001, affine=True):
         super(_SynchronizedBatchNorm, self).__init__(num_features, eps=eps, momentum=momentum, affine=affine)
 
         self._sync_master = SyncMaster(self._data_parallel_master)
@@ -50,8 +50,8 @@ class _SynchronizedBatchNorm(_BatchNorm):
         self.register_buffer('_tmp_running_mean', torch.zeros(self.num_features))
         self.register_buffer('_tmp_running_var', torch.ones(self.num_features))
         self.register_buffer('_running_iter', torch.ones(1))
-        self._tmp_running_mean = self.running_mean.clone()
-        self._tmp_running_var = self.running_var.clone()
+        self._tmp_running_mean = self.running_mean.clone() * self._running_iter
+        self._tmp_running_var = self.running_var.clone() * self._running_iter
 
     def forward(self, input):
         # If it is not parallel computation or is in evaluation mode, use PyTorch's implementation.
