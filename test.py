@@ -2,6 +2,7 @@
 import os
 import datetime
 import argparse
+from distutils.version import LooseVersion
 # Numerical libs
 import numpy as np
 import torch
@@ -60,8 +61,8 @@ def test(segmentation_module, loader, args):
                 pred_tmp = segmentation_module(feed_dict, segSize=segSize)
                 pred = pred + pred_tmp / len(args.imgSize)
 
-            _, preds = torch.max(pred.data.cpu(), dim=1)
-            preds = as_numpy(preds.squeeze(0))
+        _, preds = torch.max(pred.data.cpu(), dim=1)
+        preds = as_numpy(preds.squeeze(0))
 
         print('[{}] iter {}'
               .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), i))
@@ -110,6 +111,9 @@ def main(args):
 
 
 if __name__ == '__main__':
+    assert LooseVersion(torch.__version__) >= LooseVersion('0.4.0'), \
+        'PyTorch>=0.4.0 is required'
+
     parser = argparse.ArgumentParser()
     # Path related arguments
     parser.add_argument('--test_img', required=True)
@@ -133,7 +137,7 @@ if __name__ == '__main__':
                         help='number of classes')
     parser.add_argument('--batch_size', default=1, type=int,
                         help='batchsize. current only supports 1')
-    parser.add_argument('--imgSize', default=[300, 400, 500, 600, 700],
+    parser.add_argument('--imgSize', default=[300, 400, 500, 600],
                         nargs='+', type=int,
                         help='list of input image sizes.'
                              'for multiscale testing, e.g. 300 400 500')
