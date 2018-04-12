@@ -43,8 +43,8 @@ Encoder: (resnetXX_dilatedYY: customized resnetXX with dilated convolutions, out
 Decoder:
 - c1_bilinear (1 conv + bilinear upsample)
 - c1_bilinear_deepsup (c1_blinear + deep supervision trick)
-- psp_bilinear (pyramid pooling + bilinear upsample, see PSPNet paper for details)
-- psp_bilinear_deepsup (psp_bilinear + deep supervision trick)
+- ppm_bilinear (pyramid pooling + bilinear upsample, see [PSPNet](https://hszhao.github.io/projects/pspnet) paper for details)
+- ppm_bilinear_deepsup (ppm_bilinear + deep supervision trick)
 
 ***Coming soon***:
 - UPerNet based on Feature Pyramid Network (FPN) and Pyramid Pooling Module (PPM), with down-sampling rate of 4, 8 and 16. It doesn't need dilated convolution, a operator that is time-and-memory consuming. *Without bells and whistles*, it is comparable or even better compared with PSPNet, while requires much shorter training time and less GPU memory.
@@ -66,7 +66,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>27.5 hours</td>
     </tr>
     <tr>
-        <td rowspan="2">ResNet-50_dilated8 + psp_bilinear_deepsup</td>
+        <td rowspan="2">ResNet-50_dilated8 + ppm_bilinear_deepsup</td>
         <td>No</td><td>41.26</td><td>79.73</td><td>60.50</td>
         <td rowspan="2">33.4 hours</td>
     </tr>
@@ -79,7 +79,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>- hours</td>
     </tr>
     <tr>
-        <td>ResNet-101_dilated8 + psp_bilinear_deepsup</td>
+        <td>ResNet-101_dilated8 + ppm_bilinear_deepsup</td>
         <td>-</td><td>-</td><td>-</td><td>-</td>
         <td>- hours</td>
     </tr>
@@ -104,13 +104,37 @@ The code is developed under the following configurations.
 
 *Warning:* We don't support the outdated Python 2 anymore. PyTorch 0.4.0 or higher is required to run the codes.
 
+As PyTorch 0.4.0 is not officially released yet. We suggest running in a separate conda environment, build PyTorch from source, or install the following PyTorch package:
+```bash
+conda install -c ostrokach-forge pytorch=0.4.0
+```
+
+## Quick start: Test on an image using our trained model 
+1. Here is a simple demo to do inference on a single image:
+```bash
+chmod +x demo_test.sh
+./demo_test.sh
+```
+This script downloads trained models and a test image, runs the test script, and saves predicted segmentation (.png) to the working directory.
+
+2. Input arguments: (see full input arguments via python3 test.py -h)
+```bash
+usage: test.py [-h] --test_img TEST_IMG --model_path MODEL_PATH                                                                                                                  [--suffix SUFFIX] [--arch_encoder ARCH_ENCODER]
+               [--arch_decoder ARCH_DECODER] [--fc_dim FC_DIM]
+               [--num_val NUM_VAL] [--num_class NUM_CLASS]
+               [--batch_size BATCH_SIZE] [--imgSize IMGSIZE [IMGSIZE ...]]
+               [--imgMaxSize IMGMAXSIZE] [--padding_constant PADDING_CONSTANT]
+               [--segm_downsampling_rate SEGM_DOWNSAMPLING_RATE]
+               [--result RESULT] [--gpu_id GPU_ID]
+```
+
 ## Training
 1. Download the ADE20K scene parsing dataset:
 ```bash
 chmod +x download_ADE20K.sh
 ./download_ADE20K.sh
 ```
-2. Train a network (default: ResNet-50_dilated8 + psp_bilinear_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
+2. Train a network (default: ResNet-50_dilated8 + ppm_bilinear_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
 ```bash
 python3 train.py --num_gpus NUM_GPUS
 ```

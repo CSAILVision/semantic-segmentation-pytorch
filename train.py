@@ -4,20 +4,16 @@ import time
 # import math
 import random
 import argparse
+from distutils.version import LooseVersion
 # Numerical libs
-import numpy as np
 import torch
 import torch.nn as nn
 # Our libs
-from dataset import TrainDataset, ValDataset
+from dataset import TrainDataset
 from models import ModelBuilder, SegmentationModule
-from utils import AverageMeter, colorEncode, accuracy
+from utils import AverageMeter
 from lib.nn import UserScatteredDataParallel, user_scattered_collate, patch_replication_callback
 import lib.utils.data as torchdata
-
-# import matplotlib
-# matplotlib.use('Agg')
-# import matplotlib.pyplot as plt
 
 
 # train one epoch
@@ -59,7 +55,7 @@ def train(segmentation_module, iterator, optimizers, history, epoch, args):
         if i % args.disp_iter == 0:
             print('Epoch: [{}][{}/{}], Time: {:.2f}, Data: {:.2f}, '
                   'lr_encoder: {:.6f}, lr_decoder: {:.6f}, '
-                  'Accurarcy: {:4.2f}, Loss: {:.6f}'
+                  'Accuracy: {:4.2f}, Loss: {:.6f}'
                   .format(epoch, i, args.epoch_iters,
                           batch_time.average(), data_time.average(),
                           args.running_lr_encoder, args.running_lr_decoder,
@@ -187,13 +183,16 @@ def main(args):
 
 
 if __name__ == '__main__':
+    assert LooseVersion(torch.__version__) >= LooseVersion('0.4.0'), \
+        'PyTorch>=0.4.0 is required'
+
     parser = argparse.ArgumentParser()
     # Model related arguments
     parser.add_argument('--id', default='baseline',
                         help="a name for identifying the model")
     parser.add_argument('--arch_encoder', default='resnet50_dilated8',
                         help="architecture of net_encoder")
-    parser.add_argument('--arch_decoder', default='psp_bilinear_deepsup',
+    parser.add_argument('--arch_decoder', default='ppm_bilinear_deepsup',
                         help="architecture of net_decoder")
     parser.add_argument('--weights_encoder', default='',
                         help="weights to finetune net_encoder")
@@ -240,7 +239,7 @@ if __name__ == '__main__':
                         help='number of classes')
     parser.add_argument('--workers', default=16, type=int,
                         help='number of data loading workers')
-    parser.add_argument('--imgSize', default=[300,375,450,525,600],
+    parser.add_argument('--imgSize', default=[300,375,450,525,600], nargs='+', type=int,
                         help='input image size of short edge (int or list)')
     parser.add_argument('--imgMaxSize', default=1000, type=int,
                         help='maximum input image size of long edge')

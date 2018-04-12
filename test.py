@@ -10,9 +10,9 @@ import torch.nn as nn
 from torch.autograd import Variable
 from scipy.io import loadmat
 # Our libs
-from dataset import ValDataset
+from dataset import TestDataset
 from models import ModelBuilder, SegmentationModule
-from utils import AverageMeter, colorEncode, accuracy, intersectionAndUnion
+from utils import colorEncode
 from lib.nn import user_scattered_collate, async_copy_to
 from lib.utils import as_numpy, mark_volatile
 import lib.utils.data as torchdata
@@ -21,16 +21,13 @@ import cv2
 
 def visualize_result(data, preds, args):
     colors = loadmat('data/color150.mat')['colors']
-    (img, seg, info) = data
-
-    # segmentation
-    seg_color = colorEncode(seg, colors)
+    (img, info) = data
 
     # prediction
     pred_color = colorEncode(preds, colors)
 
     # aggregate images and save
-    im_vis = np.concatenate((img, seg_color, pred_color),
+    im_vis = np.concatenate((img, pred_color),
                             axis=1).astype(np.uint8)
 
     img_name = info.split('/')[-1]
@@ -38,22 +35,18 @@ def visualize_result(data, preds, args):
                 img_name.replace('.jpg', '.png')), im_vis)
 
 
-def evaluate(segmentation_module, loader, args):
-    acc_meter = AverageMeter()
-    intersection_meter = AverageMeter()
-    union_meter = AverageMeter()
-
+def test(segmentation_module, loader, args):
     segmentation_module.eval()
 
     for i, batch_data in enumerate(loader):
         # process data
         batch_data = batch_data[0]
-        seg_label = as_numpy(batch_data['seg_label'][0])
+        segSize = (batch_data['img_ori'].shape[0],
+                   batch_data['img_ori'].shape[1])
 
         img_resized_list = batch_data['img_data']
 
         with torch.no_grad():
-            segSize = (seg_label.shape[0], seg_label.shape[1])
             pred = torch.zeros(1, args.num_class, segSize[0], segSize[1])
             pred = Variable(pred).cuda()
 
@@ -71,29 +64,13 @@ def evaluate(segmentation_module, loader, args):
             _, preds = torch.max(pred.data.cpu(), dim=1)
             preds = as_numpy(preds.squeeze(0))
 
-        # calculate accuracy
-        acc, pix = accuracy(preds, seg_label)
-        intersection, union = intersectionAndUnion(preds, seg_label, args.num_class)
-        acc_meter.update(acc, pix)
-        intersection_meter.update(intersection)
-        union_meter.update(union)
-        print('[{}] iter {}, accuracy: {}'
-              .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                      i, acc))
-
         # visualization
-        if args.visualize:
-            visualize_result(
-                (batch_data['img_ori'], seg_label, batch_data['info']),
-                preds, args)
+        visualize_result(
+            (batch_data['img_ori'], batch_data['info']),
+            preds, args)
 
-    iou = intersection_meter.sum / (union_meter.sum + 1e-10)
-    for i, _iou in enumerate(iou):
-        print('class [{}], IoU: {}'.format(i, _iou))
-
-    print('[Eval Summary]:')
-    print('Mean IoU: {:.4}, Accuracy: {:.2f}%'
-          .format(iou.mean(), acc_meter.average()*100))
+        print('[{}] iter {}'
+              .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), i))
 
 
 def main(args):
@@ -114,8 +91,9 @@ def main(args):
     segmentation_module = SegmentationModule(net_encoder, net_decoder, crit)
 
     # Dataset and Loader
-    dataset_val = ValDataset(
-        args.list_val, args, max_sample=args.num_val)
+    list_test = [{'fpath_img': args.test_img}]
+    dataset_val = TestDataset(
+        list_test, args, max_sample=args.num_val)
     loader_val = torchdata.DataLoader(
         dataset_val,
         batch_size=args.batch_size,
@@ -127,9 +105,9 @@ def main(args):
     segmentation_module.cuda()
 
     # Main loop
-    evaluate(segmentation_module, loader_val, args)
+    test(segmentation_module, loader_val, args)
 
-    print('Evaluation Done!')
+    print('Inference done!')
 
 
 if __name__ == '__main__':
@@ -137,23 +115,20 @@ if __name__ == '__main__':
         'PyTorch>=0.4.0 is required'
 
     parser = argparse.ArgumentParser()
-    # Model related arguments
-    parser.add_argument('--id', required=True,
-                        help="a name for identifying the model to load")
+    # Path related arguments
+    parser.add_argument('--test_img', required=True)
+    parser.add_argument('--model_path', required=True,
+                        help='folder to model path')
     parser.add_argument('--suffix', default='_epoch_20.pth',
                         help="which snapshot to load")
+
+    # Model related arguments
     parser.add_argument('--arch_encoder', default='resnet50_dilated8',
                         help="architecture of net_encoder")
     parser.add_argument('--arch_decoder', default='ppm_bilinear_deepsup',
                         help="architecture of net_decoder")
     parser.add_argument('--fc_dim', default=2048, type=int,
                         help='number of features between encoder and decoder')
-
-    # Path related arguments
-    parser.add_argument('--list_val',
-                        default='./data/validation.odgt')
-    parser.add_argument('--root_dataset',
-                        default='./data/')
 
     # Data related arguments
     parser.add_argument('--num_val', default=-1, type=int,
@@ -162,20 +137,19 @@ if __name__ == '__main__':
                         help='number of classes')
     parser.add_argument('--batch_size', default=1, type=int,
                         help='batchsize. current only supports 1')
-    parser.add_argument('--imgSize', default=[450], nargs='+', type=int,
+    parser.add_argument('--imgSize', default=[300, 400, 500, 600],
+                        nargs='+', type=int,
                         help='list of input image sizes.'
-                             'for multiscale testing, e.g.  300 400 500 600')
+                             'for multiscale testing, e.g. 300 400 500')
     parser.add_argument('--imgMaxSize', default=1000, type=int,
                         help='maximum input image size of long edge')
     parser.add_argument('--padding_constant', default=8, type=int,
                         help='maxmimum downsampling rate of the network')
+    parser.add_argument('--segm_downsampling_rate', default=8, type=int,
+                        help='downsampling rate of the segmentation label')
 
     # Misc arguments
-    parser.add_argument('--ckpt', default='./ckpt',
-                        help='folder to output checkpoints')
-    parser.add_argument('--visualize', action='store_true',
-                        help='output visualization?')
-    parser.add_argument('--result', default='./result',
+    parser.add_argument('--result', default='.',
                         help='folder to output visualization results')
     parser.add_argument('--gpu_id', default=0, type=int,
                         help='gpu_id for evaluation')
@@ -186,14 +160,14 @@ if __name__ == '__main__':
     # torch.cuda.set_device(args.gpu_id)
 
     # absolute paths of model weights
-    args.weights_encoder = os.path.join(args.ckpt, args.id,
+    args.weights_encoder = os.path.join(args.model_path,
                                         'encoder' + args.suffix)
-    args.weights_decoder = os.path.join(args.ckpt, args.id,
+    args.weights_decoder = os.path.join(args.model_path,
                                         'decoder' + args.suffix)
+
     assert os.path.exists(args.weights_encoder) and \
         os.path.exists(args.weights_encoder), 'checkpoint does not exitst!'
 
-    args.result = os.path.join(args.result, args.id)
     if not os.path.isdir(args.result):
         os.makedirs(args.result)
 
