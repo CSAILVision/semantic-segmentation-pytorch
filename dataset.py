@@ -158,7 +158,7 @@ class TrainDataset(torchdata.Dataset):
 
 
 class ValDataset(torchdata.Dataset):
-    def __init__(self, odgt, opt, max_sample=-1):
+    def __init__(self, odgt, opt, max_sample=-1, start_idx=-1, end_idx=-1):
         self.root_dataset = opt.root_dataset
         self.imgSize = opt.imgSize
         self.imgMaxSize = opt.imgMaxSize
@@ -174,10 +174,13 @@ class ValDataset(torchdata.Dataset):
 
         if max_sample > 0:
             self.list_sample = self.list_sample[0:max_sample]
+
+        if start_idx >= 0 and end_idx >= 0: # divide file list
+            self.list_sample = self.list_sample[start_idx:end_idx]
+
         self.num_sample = len(self.list_sample)
         assert self.num_sample > 0
         print('# samples: {}'.format(self.num_sample))
-
 
     def __getitem__(self, index):
         this_record = self.list_sample[index]
