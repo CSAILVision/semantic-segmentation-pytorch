@@ -27,7 +27,7 @@ def conv3x3(in_planes, out_planes, stride=1):
 
 
 class GroupBottleneck(nn.Module):
-    expansion = 4
+    expansion = 2
 
     def __init__(self, inplanes, planes, stride=1, groups=1, downsample=None):
         super(GroupBottleneck, self).__init__()
@@ -36,8 +36,8 @@ class GroupBottleneck(nn.Module):
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
                                padding=1, groups=groups, bias=False)
         self.bn2 = SynchronizedBatchNorm2d(planes)
-        self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
-        self.bn3 = SynchronizedBatchNorm2d(planes * 4)
+        self.conv3 = nn.Conv2d(planes, planes * 2, kernel_size=1, bias=False)
+        self.bn3 = SynchronizedBatchNorm2d(planes * 2)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
@@ -81,12 +81,12 @@ class ResNeXt(nn.Module):
         self.relu3 = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        self.layer1 = self._make_layer(block, 64, layers[0], groups=groups)
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, groups=groups)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, groups=groups)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, groups=groups)
+        self.layer1 = self._make_layer(block, 128, layers[0], groups=groups)
+        self.layer2 = self._make_layer(block, 256, layers[1], stride=2, groups=groups)
+        self.layer3 = self._make_layer(block, 512, layers[2], stride=2, groups=groups)
+        self.layer4 = self._make_layer(block, 1024, layers[3], stride=2, groups=groups)
         self.avgpool = nn.AvgPool2d(7, stride=1)
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.fc = nn.Linear(1024 * block.expansion, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -96,7 +96,7 @@ class ResNeXt(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-    def _make_layer(self, block, planes, blocks, stride=1):
+    def _make_layer(self, block, planes, blocks, stride=1, groups=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
@@ -106,10 +106,10 @@ class ResNeXt(nn.Module):
             )
 
         layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample))
+        layers.append(block(self.inplanes, planes, stride, groups, downsample))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes))
+            layers.append(block(self.inplanes, planes, groups=groups))
 
         return nn.Sequential(*layers)
 
