@@ -34,11 +34,11 @@ So we re-implement the `DataParallel` module, and make it support distributing d
 We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling.
 
 Encoder: (resnetXX_dilatedYY: customized resnetXX with dilated convolutions, output feature map is 1/YY of input size.)
-- resnet34_dilated16, resnet34_dilated8
-- resnet50_dilated16, resnet50_dilated8
+- ResNet50, resnet50_dilated16, resnet50_dilated8
+- ResNet101, resnet101_dilated16, resnet101_dilated8
 
 ***Coming soon***:
-- resnet101_dilated16, resnet101_dilated8
+- ResNeXt101, resnext101_dilated16, resnext101_dilated8
 
 Decoder:
 - c1_bilinear (1 conv + bilinear upsample)
@@ -46,8 +46,8 @@ Decoder:
 - ppm_bilinear (pyramid pooling + bilinear upsample, see [PSPNet](https://hszhao.github.io/projects/pspnet) paper for details)
 - ppm_bilinear_deepsup (ppm_bilinear + deep supervision trick)
 
-***Coming soon***:
-- UPerNet based on Feature Pyramid Network (FPN) and Pyramid Pooling Module (PPM), with down-sampling rate of 4, 8 and 16. It doesn't need dilated convolution, a operator that is time-and-memory consuming. *Without bells and whistles*, it is comparable or even better compared with PSPNet, while requires much shorter training time and less GPU memory.
+***New***:
+- UPerNet based on Feature Pyramid Network (FPN) and Pyramid Pooling Module (PPM), with down-sampling rate of 4, 8 and 16. It doesn't need dilated convolution, a operator that is time-and-memory consuming. *Without bells and whistles*, it is comparable or even better compared with PSPNet, while requires much shorter training time and less GPU memory. E.g., you cannot train a PSPNet-101 on TITAN Xp GPUs with only 12GB memory, while you can train a UPerNet-101 on such GPUs.
 
 
 ## Performance:
@@ -87,7 +87,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>Yes</td><td>42.53</td><td>80.91</td><td>61.72</td>
     </tr>
     <tr>
-        <td rowspan="2">UperNet-50</td>
+        <td rowspan="2"><b>UperNet-50</b></td>
         <td>No</td><td>40.44</td><td>79.80</td><td>60.12</td>
         <td rowspan="2">1.75 * 20 = 35.0 hours</td>
     </tr>
@@ -95,7 +95,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>Yes</td><td>41.55</td><td>80.23</td><td>60.89</td>
     </tr>
     <tr>
-        <td rowspan="2">UperNet-101</td>
+        <td rowspan="2"><b>UperNet-101</b></td>
         <td>No</td><td>41.98</td><td>80.63</td><td>61.34</td>
         <td rowspan="2">2.5 * 25 = 50.0 hours</td>
     </tr>
@@ -109,7 +109,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     </tr>
 </tbody></table>
 
-The speed is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GPU memory), except for ResNet-101_dilated8, which is benchmarked on a server with 8 NVIDIA Tesla P40 GPUS (22GB GPU memory), because of the insufficient memory issue when using dilated conv on a very deep network.
+The speed is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GPU memory), ***except for*** ResNet-101_dilated8, which is benchmarked on a server with 8 NVIDIA Tesla P40 GPUS (22GB GPU memory), because of the insufficient memory issue when using dilated conv on a very deep network.
 
 ## Environment
 The code is developed under the following configurations.
@@ -153,6 +153,17 @@ chmod +x download_ADE20K.sh
 python3 train.py --num_gpus NUM_GPUS
 ```
 
+Train a UPerNet (e.g., ResNet-50 or ResNet-101)
+```bash
+python3 train.py --num_gpus NUM_GPUS --arch_encoder resnet50 --arch_decoder upernet 
+--segm_downsampling_rate 4 --padding_constant 32
+```
+or
+```bash
+python3 train.py --num_gpus NUM_GPUS --arch_encoder resnet101 --arch_decoder upernet 
+--segm_downsampling_rate 4 --padding_constant 32
+```
+
 3. Input arguments: (see full input arguments via ```python3 train.py -h ```)
 ```bash
 usage: train.py [-h] [--id ID] [--arch_encoder ARCH_ENCODER]
@@ -181,6 +192,11 @@ usage: train.py [-h] [--id ID] [--arch_encoder ARCH_ENCODER]
 ```bash
 python3 eval.py --id MODEL_ID --suffix SUFFIX
 ```
+Evaluate a UPerNet (e.g, UPerNet-50)
+```bash
+python3 eval.py --id MODEL_ID --suffix SUFFIX 
+--arch_encoder resnet50 --arch_decoder upernet --padding_constant 32
+```
 
 2. Input arguments: (see full input arguments via ```python3 eval.py -h ```)
 ```bash
@@ -190,8 +206,7 @@ usage: eval.py [-h] --id ID [--suffix SUFFIX] [--arch_encoder ARCH_ENCODER]
                [--num_val NUM_VAL] [--num_class NUM_CLASS]
                [--batch_size BATCH_SIZE] [--imgSize IMGSIZE]
                [--imgMaxSize IMGMAXSIZE] [--padding_constant PADDING_CONSTANT]
-               [--segm_downsampling_rate SEGM_DOWNSAMPLING_RATE] [--ckpt CKPT]
-               [--visualize] [--result RESULT] [--gpu_id GPU_ID]
+               [--ckpt CKPT] [--visualize] [--result RESULT] [--gpu_id GPU_ID]
 ```
 
 
