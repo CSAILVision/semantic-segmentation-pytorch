@@ -15,7 +15,7 @@ __all__ = ['ResNeXt', 'resnext101'] # support resnext 101
 
 
 model_urls = {
-    #'resnet50': 'http://sceneparsing.csail.mit.edu/model/pretrained_resnet/resnet50-imagenet.pth',
+    #'resnext50': 'http://sceneparsing.csail.mit.edu/model/pretrained_resnet/resnext50-imagenet.pth',
     'resnext101': 'http://sceneparsing.csail.mit.edu/model/pretrained_resnet/resnext101-imagenet.pth'
 }
 

@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torchvision
 import resnet
+import resnext
 from lib.nn import SynchronizedBatchNorm2d
 
 
@@ -109,6 +110,9 @@ class ModelBuilder():
             orig_resnet = resnet.__dict__['resnet101'](pretrained=pretrained)
             net_encoder = ResnetDilated(orig_resnet,
                                         dilate_scale=16)
+        elif arch == 'resnext101':
+            orig_resnext = resnext.__dict__['resnext101'](pretrained=pretrained)
+            net_encoder = Resnet(orig_resnext) # we can still use class Resnet
         else:
             raise Exception('Architecture undefined!')
 
