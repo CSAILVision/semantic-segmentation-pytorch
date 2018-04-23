@@ -63,12 +63,12 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     <tr>
         <td>ResNet-50_dilated8 + c1_bilinear_deepsup</td>
         <td>No</td><td>34.88</td><td>76.54</td><td>55.71</td>
-        <td>27.5 hours</td>
+        <td>1.38 * 20 = 27.6 hours</td>
     </tr>
     <tr>
         <td rowspan="2">ResNet-50_dilated8 + ppm_bilinear_deepsup</td>
         <td>No</td><td>41.26</td><td>79.73</td><td>60.50</td>
-        <td rowspan="2">33.4 hours</td>
+        <td rowspan="2">1.67 * 20 = 33.4 hours</td>
     </tr>
     <tr>
         <td>Yes</td><td>42.04</td><td>80.23</td><td>61.14</td>
@@ -79,17 +79,31 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>- hours</td>
     </tr>
     <tr>
-        <td>ResNet-101_dilated8 + ppm_bilinear_deepsup</td>
-        <td>-</td><td>-</td><td>-</td><td>-</td>
-        <td>- hours</td>
+        <td rowspan="2">ResNet-101_dilated8 + ppm_bilinear_deepsup</td>
+        <td>No</td><td>42.19</td><td>80.59</td><td>61.39</td>
+        <td rowspan="2">3.82 * 25 = 95.5 hours</td>
     </tr>
     <tr>
-        <td>UPerNet-50 (coming soon!)</td>
-        <td>-</td><td>-</td><td>-</td><td>-</td>
-        <td>- hours</td>
+        <td>Yes</td><td>42.53</td><td>80.91</td><td>61.72</td>
     </tr>
     <tr>
-        <td>UPerNet-101 (coming soon!)</td>
+        <td rowspan="2">UperNet-50</td>
+        <td>No</td><td>40.44</td><td>79.80</td><td>60.12</td>
+        <td rowspan="2">1.75 * 20 = 35.0 hours</td>
+    </tr>
+    <tr>
+        <td>Yes</td><td>41.55</td><td>80.23</td><td>60.89</td>
+    </tr>
+    <tr>
+        <td rowspan="2">UperNet-101</td>
+        <td>No</td><td>41.98</td><td>80.63</td><td>61.34</td>
+        <td rowspan="2">2.5 * 25 = 50.0 hours</td>
+    </tr>
+    <tr>
+        <td>Yes</td><td>42.66</td><td>81.01</td><td>61.84</td>
+    </tr>
+    <tr>
+        <td>UPerNet-ResNext101 (coming soon!)</td>
         <td>-</td><td>-</td><td>-</td><td>-</td>
         <td>- hours</td>
     </tr>
