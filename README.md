@@ -29,6 +29,11 @@ Different from image classification task, where the input images are resized to 
 
 So we re-implement the `DataParallel` module, and make it support distributing data to multiple GPUs in python dict. At the same time, the dataloader also operates differently. *Now the batch size of a dataloader always equals to the number of GPUs*, each element will be sent to a GPU. It is also compatible with multi-processing. Note that the file index for the multi-processing dataloader is stored on the master process, which is in contradict to our goal that each worker maintains its own file list. So we use a trick that although the master process still gives dataloader an index for `__getitem__` function, we just ignore such request and send a random batch dict. Also, *the multiple workers forked by the dataloader all have the same seed*, you will find that multiple workers will yield exactly the same data, if we use the above-mentioned trick directly. Therefore, we add one line of code which sets the defaut seed for `numpy.random` before activating multiple worker in dataloader.
 
+### An Efficient and Effective Framework: UPerNet
+UPerNet based on Feature Pyramid Network (FPN) and Pyramid Pooling Module (PPM), with down-sampling rate of 4, 8 and 16. It doesn't need dilated convolution, a operator that is time-and-memory consuming. *Without bells and whistles*, it is comparable or even better compared with PSPNet, while requires much shorter training time and less GPU memory. E.g., you cannot train a PSPNet-101 on TITAN Xp GPUs with only 12GB memory, while you can train a UPerNet-101 on such GPUs. 
+
+Thanks to the efficient network design, we will soon opensource stronger models of UPerNet based on ResNeXt that is able to run on normal GPUs. 
+
 
 ## Supported models
 We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling.
@@ -45,10 +50,6 @@ Decoder:
 - c1_bilinear_deepsup (c1_blinear + deep supervision trick)
 - ppm_bilinear (pyramid pooling + bilinear upsample, see [PSPNet](https://hszhao.github.io/projects/pspnet) paper for details)
 - ppm_bilinear_deepsup (ppm_bilinear + deep supervision trick)
-
-***New***:
-- UPerNet based on Feature Pyramid Network (FPN) and Pyramid Pooling Module (PPM), with down-sampling rate of 4, 8 and 16. It doesn't need dilated convolution, a operator that is time-and-memory consuming. *Without bells and whistles*, it is comparable or even better compared with PSPNet, while requires much shorter training time and less GPU memory. E.g., you cannot train a PSPNet-101 on TITAN Xp GPUs with only 12GB memory, while you can train a UPerNet-101 on such GPUs.
-
 
 ## Performance:
 IMPORTANT: We use our self-trained base model on ImageNet. The model takes the input in BGR form (consistent with opencv) instead of RGB form as used by default implementation of PyTorch. The base model will be automatically downloaded when needed.
@@ -196,6 +197,11 @@ Evaluate a UPerNet (e.g, UPerNet-50)
 ```bash
 python3 eval.py --id MODEL_ID --suffix SUFFIX 
 --arch_encoder resnet50 --arch_decoder upernet --padding_constant 32
+```
+
+***We also provide a multi-GPU evaluation script.*** It is extremely easy to use. For example, to run the evaluation codes on 8 GPUs, simply add ```--device 0-7```. You can also choose which GPUs to use, for example, ```--device 0,2,4,6```.
+```bash
+python3 eval_multipro.py --id MODEL_ID --suffix SUFFIX --device DEVICE_ID
 ```
 
 2. Input arguments: (see full input arguments via ```python3 eval.py -h ```)
