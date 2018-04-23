@@ -39,17 +39,18 @@ Thanks to the efficient network design, we will soon opensource stronger models 
 We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling.
 
 Encoder: (resnetXX_dilatedYY: customized resnetXX with dilated convolutions, output feature map is 1/YY of input size.)
-- ResNet50, resnet50_dilated16, resnet50_dilated8
-- ResNet101, resnet101_dilated16, resnet101_dilated8
+- ResNet50: resnet50_dilated16, resnet50_dilated8
+- ResNet101: resnet101_dilated16, resnet101_dilated8
 
 ***Coming soon***:
-- ResNeXt101, resnext101_dilated16, resnext101_dilated8
+- ResNeXt101: resnext101_dilated16, resnext101_dilated8
 
 Decoder:
 - c1_bilinear (1 conv + bilinear upsample)
 - c1_bilinear_deepsup (c1_blinear + deep supervision trick)
 - ppm_bilinear (pyramid pooling + bilinear upsample, see [PSPNet](https://hszhao.github.io/projects/pspnet) paper for details)
 - ppm_bilinear_deepsup (ppm_bilinear + deep supervision trick)
+- upernet (pyramid pooling + FPN head)
 
 ## Performance:
 IMPORTANT: We use our self-trained base model on ImageNet. The model takes the input in BGR form (consistent with opencv) instead of RGB form as used by default implementation of PyTorch. The base model will be automatically downloaded when needed.
@@ -73,11 +74,6 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     </tr>
     <tr>
         <td>Yes</td><td>42.04</td><td>80.23</td><td>61.14</td>
-    </tr>
-    <tr>
-        <td>ResNet-101_dilated8 + c1_bilinear_deepsup</td>
-        <td>-</td><td>-</td><td>-</td><td>-</td>
-        <td>- hours</td>
     </tr>
     <tr>
         <td rowspan="2">ResNet-101_dilated8 + ppm_bilinear_deepsup</td>
@@ -115,7 +111,7 @@ The speed is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GP
 ## Environment
 The code is developed under the following configurations.
 - Hardware: 2-8 GPUs (with at least 12G GPU memories) (change ```[--num_gpus NUM_GPUS]``` accordingly)
-- Software: Ubuntu 16.04.3 LTS, CUDA 8.0, ***Python3.5***, ***PyTorch 0.4.0***
+- Software: Ubuntu 16.04.3 LTS, CUDA 8.0, ***Python>=3.5***, ***PyTorch>=0.4.0***
 
 *Warning:* We don't support the outdated Python 2 anymore. PyTorch 0.4.0 or higher is required to run the codes.
 
@@ -149,7 +145,7 @@ usage: test.py [-h] --test_img TEST_IMG --model_path MODEL_PATH                 
 chmod +x download_ADE20K.sh
 ./download_ADE20K.sh
 ```
-2. Train a network (default: ResNet-50_dilated8 + ppm_bilinear_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
+2. Train a default network (ResNet-50_dilated8 + ppm_bilinear_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
 ```bash
 python3 train.py --num_gpus NUM_GPUS
 ```
