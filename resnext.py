@@ -11,12 +11,12 @@ except ImportError:
     from urllib.request import urlretrieve
 
 
-__all__ = ['ResNeXt', 'resnext50', 'resnext101'] # resnet101 is coming soon!
+__all__ = ['ResNeXt', 'resnext101'] # support resnext 101
 
 
 model_urls = {
     #'resnet50': 'http://sceneparsing.csail.mit.edu/model/pretrained_resnet/resnet50-imagenet.pth',
-    #'resnet101': 'http://sceneparsing.csail.mit.edu/model/pretrained_resnet/resnet101-imagenet.pth'
+    'resnext101': 'http://sceneparsing.csail.mit.edu/model/pretrained_resnet/resnext101-imagenet.pth'
 }
 
 
@@ -131,6 +131,7 @@ class ResNeXt(nn.Module):
         return x
 
 
+'''
 def resnext50(pretrained=False, **kwargs):
     """Constructs a ResNet-50 model.
 
@@ -141,6 +142,7 @@ def resnext50(pretrained=False, **kwargs):
     if pretrained:
         model.load_state_dict(load_url(model_urls['resnext50']), strict=False)
     return model
+'''
 
 
 def resnext101(pretrained=False, **kwargs):
