@@ -29,26 +29,28 @@ Different from image classification task, where the input images are resized to 
 
 So we re-implement the `DataParallel` module, and make it support distributing data to multiple GPUs in python dict. At the same time, the dataloader also operates differently. *Now the batch size of a dataloader always equals to the number of GPUs*, each element will be sent to a GPU. It is also compatible with multi-processing. Note that the file index for the multi-processing dataloader is stored on the master process, which is in contradict to our goal that each worker maintains its own file list. So we use a trick that although the master process still gives dataloader an index for `__getitem__` function, we just ignore such request and send a random batch dict. Also, *the multiple workers forked by the dataloader all have the same seed*, you will find that multiple workers will yield exactly the same data, if we use the above-mentioned trick directly. Therefore, we add one line of code which sets the defaut seed for `numpy.random` before activating multiple worker in dataloader.
 
+### An Efficient and Effective Framework: UPerNet
+UPerNet based on Feature Pyramid Network (FPN) and Pyramid Pooling Module (PPM), with down-sampling rate of 4, 8 and 16. It doesn't need dilated convolution, a operator that is time-and-memory consuming. *Without bells and whistles*, it is comparable or even better compared with PSPNet, while requires much shorter training time and less GPU memory. E.g., you cannot train a PSPNet-101 on TITAN Xp GPUs with only 12GB memory, while you can train a UPerNet-101 on such GPUs. 
+
+Thanks to the efficient network design, we will soon opensource stronger models of UPerNet based on ResNeXt that is able to run on normal GPUs. 
+
 
 ## Supported models
 We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling.
 
 Encoder: (resnetXX_dilatedYY: customized resnetXX with dilated convolutions, output feature map is 1/YY of input size.)
-- resnet34_dilated16, resnet34_dilated8
-- resnet50_dilated16, resnet50_dilated8
+- ResNet50: resnet50_dilated16, resnet50_dilated8
+- ResNet101: resnet101_dilated16, resnet101_dilated8
 
 ***Coming soon***:
-- resnet101_dilated16, resnet101_dilated8
+- ResNeXt101: resnext101_dilated16, resnext101_dilated8
 
 Decoder:
 - c1_bilinear (1 conv + bilinear upsample)
 - c1_bilinear_deepsup (c1_blinear + deep supervision trick)
 - ppm_bilinear (pyramid pooling + bilinear upsample, see [PSPNet](https://hszhao.github.io/projects/pspnet) paper for details)
 - ppm_bilinear_deepsup (ppm_bilinear + deep supervision trick)
-
-***Coming soon***:
-- UPerNet based on Feature Pyramid Network (FPN) and Pyramid Pooling Module (PPM), with down-sampling rate of 4, 8 and 16. It doesn't need dilated convolution, a operator that is time-and-memory consuming. *Without bells and whistles*, it is comparable or even better compared with PSPNet, while requires much shorter training time and less GPU memory.
-
+- upernet (pyramid pooling + FPN head)
 
 ## Performance:
 IMPORTANT: We use our self-trained base model on ImageNet. The model takes the input in BGR form (consistent with opencv) instead of RGB form as used by default implementation of PyTorch. The base model will be automatically downloaded when needed.
@@ -63,44 +65,53 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     <tr>
         <td>ResNet-50_dilated8 + c1_bilinear_deepsup</td>
         <td>No</td><td>34.88</td><td>76.54</td><td>55.71</td>
-        <td>27.5 hours</td>
+        <td>1.38 * 20 = 27.6 hours</td>
     </tr>
     <tr>
         <td rowspan="2">ResNet-50_dilated8 + ppm_bilinear_deepsup</td>
         <td>No</td><td>41.26</td><td>79.73</td><td>60.50</td>
-        <td rowspan="2">33.4 hours</td>
+        <td rowspan="2">1.67 * 20 = 33.4 hours</td>
     </tr>
     <tr>
         <td>Yes</td><td>42.04</td><td>80.23</td><td>61.14</td>
     </tr>
     <tr>
-        <td>ResNet-101_dilated8 + c1_bilinear_deepsup</td>
-        <td>-</td><td>-</td><td>-</td><td>-</td>
-        <td>- hours</td>
+        <td rowspan="2">ResNet-101_dilated8 + ppm_bilinear_deepsup</td>
+        <td>No</td><td>42.19</td><td>80.59</td><td>61.39</td>
+        <td rowspan="2">3.82 * 25 = 95.5 hours</td>
     </tr>
     <tr>
-        <td>ResNet-101_dilated8 + ppm_bilinear_deepsup</td>
-        <td>-</td><td>-</td><td>-</td><td>-</td>
-        <td>- hours</td>
+        <td>Yes</td><td>42.53</td><td>80.91</td><td>61.72</td>
     </tr>
     <tr>
-        <td>UPerNet-50 (coming soon!)</td>
-        <td>-</td><td>-</td><td>-</td><td>-</td>
-        <td>- hours</td>
+        <td rowspan="2"><b>UperNet-50</b></td>
+        <td>No</td><td>40.44</td><td>79.80</td><td>60.12</td>
+        <td rowspan="2">1.75 * 20 = 35.0 hours</td>
     </tr>
     <tr>
-        <td>UPerNet-101 (coming soon!)</td>
+        <td>Yes</td><td>41.55</td><td>80.23</td><td>60.89</td>
+    </tr>
+    <tr>
+        <td rowspan="2"><b>UperNet-101</b></td>
+        <td>No</td><td>41.98</td><td>80.63</td><td>61.34</td>
+        <td rowspan="2">2.5 * 25 = 50.0 hours</td>
+    </tr>
+    <tr>
+        <td>Yes</td><td>42.66</td><td>81.01</td><td>61.84</td>
+    </tr>
+    <tr>
+        <td>UPerNet-ResNext101 (coming soon!)</td>
         <td>-</td><td>-</td><td>-</td><td>-</td>
         <td>- hours</td>
     </tr>
 </tbody></table>
 
-The speed is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GPU memory), except for ResNet-101_dilated8, which is benchmarked on a server with 8 NVIDIA Tesla P40 GPUS (22GB GPU memory), because of the insufficient memory issue when using dilated conv on a very deep network.
+The speed is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GPU memory), ***except for*** ResNet-101_dilated8, which is benchmarked on a server with 8 NVIDIA Tesla P40 GPUS (22GB GPU memory), because of the insufficient memory issue when using dilated conv on a very deep network.
 
 ## Environment
 The code is developed under the following configurations.
 - Hardware: 2-8 GPUs (with at least 12G GPU memories) (change ```[--num_gpus NUM_GPUS]``` accordingly)
-- Software: Ubuntu 16.04.3 LTS, CUDA 8.0, ***Python3.5***, ***PyTorch 0.4.0***
+- Software: Ubuntu 16.04.3 LTS, CUDA 8.0, ***Python>=3.5***, ***PyTorch>=0.4.0***
 
 *Warning:* We don't support the outdated Python 2 anymore. PyTorch 0.4.0 or higher is required to run the codes.
 
@@ -134,9 +145,20 @@ usage: test.py [-h] --test_img TEST_IMG --model_path MODEL_PATH                 
 chmod +x download_ADE20K.sh
 ./download_ADE20K.sh
 ```
-2. Train a network (default: ResNet-50_dilated8 + ppm_bilinear_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
+2. Train a default network (ResNet-50_dilated8 + ppm_bilinear_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
 ```bash
 python3 train.py --num_gpus NUM_GPUS
+```
+
+Train a UPerNet (e.g., ResNet-50 or ResNet-101)
+```bash
+python3 train.py --num_gpus NUM_GPUS --arch_encoder resnet50 --arch_decoder upernet 
+--segm_downsampling_rate 4 --padding_constant 32
+```
+or
+```bash
+python3 train.py --num_gpus NUM_GPUS --arch_encoder resnet101 --arch_decoder upernet 
+--segm_downsampling_rate 4 --padding_constant 32
 ```
 
 3. Input arguments: (see full input arguments via ```python3 train.py -h ```)
@@ -163,9 +185,19 @@ usage: train.py [-h] [--id ID] [--arch_encoder ARCH_ENCODER]
 
 
 ## Evaluation
-1. Evaluate a trained network on the validation set. Add ```--visualize``` option to output visualizations shown in teaser.
+1. Evaluate a trained network on the validation set. Add ```--visualize``` option to output visualizations as shown in teaser.
 ```bash
 python3 eval.py --id MODEL_ID --suffix SUFFIX
+```
+Evaluate a UPerNet (e.g, UPerNet-50)
+```bash
+python3 eval.py --id MODEL_ID --suffix SUFFIX 
+--arch_encoder resnet50 --arch_decoder upernet --padding_constant 32
+```
+
+***We also provide a multi-GPU evaluation script.*** It is extremely easy to use. For example, to run the evaluation codes on 8 GPUs, simply add ```--device 0-7```. You can also choose which GPUs to use, for example, ```--device 0,2,4,6```.
+```bash
+python3 eval_multipro.py --id MODEL_ID --suffix SUFFIX --device DEVICE_ID
 ```
 
 2. Input arguments: (see full input arguments via ```python3 eval.py -h ```)
@@ -176,8 +208,7 @@ usage: eval.py [-h] --id ID [--suffix SUFFIX] [--arch_encoder ARCH_ENCODER]
                [--num_val NUM_VAL] [--num_class NUM_CLASS]
                [--batch_size BATCH_SIZE] [--imgSize IMGSIZE]
                [--imgMaxSize IMGMAXSIZE] [--padding_constant PADDING_CONSTANT]
-               [--segm_downsampling_rate SEGM_DOWNSAMPLING_RATE] [--ckpt CKPT]
-               [--visualize] [--result RESULT] [--gpu_id GPU_ID]
+               [--ckpt CKPT] [--visualize] [--result RESULT] [--gpu_id GPU_ID]
 ```
 
 

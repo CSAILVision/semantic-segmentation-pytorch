@@ -79,26 +79,49 @@ def checkpoint(nets, history, args, epoch_num):
     dict_encoder = net_encoder.state_dict()
     dict_decoder = net_decoder.state_dict()
 
-    dict_encoder_save = {k: v for k, v in dict_encoder.items() if not (k.endswith('_tmp_running_mean') or k.endswith('tmp_running_var'))}
-    dict_decoder_save = {k: v for k, v in dict_decoder.items() if not (k.endswith('_tmp_running_mean') or k.endswith('tmp_running_var'))}
-
+    # dict_encoder_save = {k: v for k, v in dict_encoder.items() if not (k.endswith('_tmp_running_mean') or k.endswith('tmp_running_var'))}
+    # dict_decoder_save = {k: v for k, v in dict_decoder.items() if not (k.endswith('_tmp_running_mean') or k.endswith('tmp_running_var'))}
+    
     torch.save(history,
                '{}/history_{}'.format(args.ckpt, suffix_latest))
-    torch.save(dict_encoder_save,
+    torch.save(dict_encoder,
                '{}/encoder_{}'.format(args.ckpt, suffix_latest))
-    torch.save(dict_decoder_save,
+    torch.save(dict_decoder,
                '{}/decoder_{}'.format(args.ckpt, suffix_latest))
+
+
+def group_weight(module):
+    group_decay = []
+    group_no_decay = []
+    for m in module.modules():
+        if isinstance(m, nn.Linear):
+            group_decay.append(m.weight)
+            if m.bias is not None:
+                group_no_decay.append(m.bias)
+        elif isinstance(m, nn.modules.conv._ConvNd):
+            group_decay.append(m.weight)
+            if m.bias is not None:
+                group_no_decay.append(m.bias)
+        elif isinstance(m, nn.modules.batchnorm._BatchNorm):
+            if m.weight is not None:
+                group_no_decay.append(m.weight)
+            if m.bias is not None:
+                group_no_decay.append(m.bias)
+
+    assert len(list(module.parameters())) == len(group_decay) + len(group_no_decay)
+    groups = [dict(params=group_decay), dict(params=group_no_decay, weight_decay=.0)]
+    return groups
 
 
 def create_optimizers(nets, args):
     (net_encoder, net_decoder, crit) = nets
     optimizer_encoder = torch.optim.SGD(
-        net_encoder.parameters(),
+        group_weight(net_encoder),
         lr=args.lr_encoder,
         momentum=args.beta1,
         weight_decay=args.weight_decay)
     optimizer_decoder = torch.optim.SGD(
-        net_decoder.parameters(),
+        group_weight(net_decoder),
         lr=args.lr_decoder,
         momentum=args.beta1,
         weight_decay=args.weight_decay)
