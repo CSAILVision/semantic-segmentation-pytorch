@@ -94,7 +94,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     <tr>
         <td rowspan="2"><b>UperNet-101</b></td>
         <td>No</td><td>41.98</td><td>80.63</td><td>61.34</td>
-        <td rowspan="2">2.5 * 25 = 50.0 hours</td>
+        <td rowspan="2">2.5 * 25 = 62.5 hours</td>
     </tr>
     <tr>
         <td>Yes</td><td>42.66</td><td>81.01</td><td>61.84</td>
@@ -114,11 +114,6 @@ The code is developed under the following configurations.
 - Software: Ubuntu 16.04.3 LTS, CUDA 8.0, ***Python>=3.5***, ***PyTorch>=0.4.0***
 
 *Warning:* We don't support the outdated Python 2 anymore. PyTorch 0.4.0 or higher is required to run the codes.
-
-As PyTorch 0.4.0 is not officially released yet. We suggest running in a separate conda environment, build PyTorch from source, or install the following PyTorch package:
-```bash
-conda install -c ostrokach-forge pytorch=0.4.0
-```
 
 ## Quick start: Test on an image using our trained model 
 1. Here is a simple demo to do inference on a single image:
