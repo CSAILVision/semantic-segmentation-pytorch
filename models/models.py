@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision
-import resnet
-import resnext
+from . import resnet, resnext
 from lib.nn import SynchronizedBatchNorm2d
 
 
@@ -531,4 +530,3 @@ class UPerNet(nn.Module):
         x = nn.functional.log_softmax(x, dim=1)
 
         return x
-
