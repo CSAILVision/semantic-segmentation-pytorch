@@ -115,11 +115,6 @@ The code is developed under the following configurations.
 
 *Warning:* We don't support the outdated Python 2 anymore. PyTorch 0.4.0 or higher is required to run the codes.
 
-As PyTorch 0.4.0 is not officially released yet. We suggest running in a separate conda environment, build PyTorch from source, or install the following PyTorch package:
-```bash
-conda install -c ostrokach-forge pytorch=0.4.0
-```
-
 ## Quick start: Test on an image using our trained model 
 1. Here is a simple demo to do inference on a single image:
 ```bash
