@@ -94,7 +94,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     <tr>
         <td rowspan="2"><b>UperNet-101</b></td>
         <td>No</td><td>41.98</td><td>80.63</td><td>61.34</td>
-        <td rowspan="2">2.5 * 25 = 50.0 hours</td>
+        <td rowspan="2">2.5 * 25 = 62.5 hours</td>
     </tr>
     <tr>
         <td>Yes</td><td>42.66</td><td>81.01</td><td>61.84</td>
