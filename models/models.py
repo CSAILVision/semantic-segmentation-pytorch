@@ -64,7 +64,7 @@ class ModelBuilder():
     def weights_init(self, m):
         classname = m.__class__.__name__
         if classname.find('Conv') != -1:
-            nn.init.kaiming_normal(m.weight.data)
+            nn.init.kaiming_normal_(m.weight.data)
         elif classname.find('BatchNorm') != -1:
             m.weight.data.fill_(1.)
             m.bias.data.fill_(1e-4)
@@ -295,7 +295,8 @@ class C1BilinearDeepSup(nn.Module):
         x = self.conv_last(x)
 
         if self.use_softmax:  # is True during inference
-            x = nn.functional.upsample(x, size=segSize, mode='bilinear')
+            x = nn.functional.upsample(
+                x, size=segSize, mode='bilinear', align_corners=False)
             x = nn.functional.softmax(x, dim=1)
             return x
 
@@ -327,7 +328,8 @@ class C1Bilinear(nn.Module):
         x = self.conv_last(x)
 
         if self.use_softmax: # is True during inference
-            x = nn.functional.upsample(x, size=segSize, mode='bilinear')
+            x = nn.functional.upsample(
+                x, size=segSize, mode='bilinear', align_corners=False)
             x = nn.functional.softmax(x, dim=1)
         else:
             x = nn.functional.log_softmax(x, dim=1)
@@ -370,13 +372,14 @@ class PPMBilinear(nn.Module):
             ppm_out.append(nn.functional.upsample(
                 pool_scale(conv5),
                 (input_size[2], input_size[3]),
-                mode='bilinear'))
+                mode='bilinear', align_corners=False))
         ppm_out = torch.cat(ppm_out, 1)
 
         x = self.conv_last(ppm_out)
 
         if self.use_softmax:  # is True during inference
-            x = nn.functional.upsample(x, size=segSize, mode='bilinear')
+            x = nn.functional.upsample(
+                x, size=segSize, mode='bilinear', align_corners=False)
             x = nn.functional.softmax(x, dim=1)
         else:
             x = nn.functional.log_softmax(x, dim=1)
@@ -421,13 +424,14 @@ class PPMBilinearDeepsup(nn.Module):
             ppm_out.append(nn.functional.upsample(
                 pool_scale(conv5),
                 (input_size[2], input_size[3]),
-                mode='bilinear'))
+                mode='bilinear', align_corners=False))
         ppm_out = torch.cat(ppm_out, 1)
 
         x = self.conv_last(ppm_out)
 
         if self.use_softmax:  # is True during inference
-            x = nn.functional.upsample(x, size=segSize, mode='bilinear')
+            x = nn.functional.upsample(
+                x, size=segSize, mode='bilinear', align_corners=False)
             x = nn.functional.softmax(x, dim=1)
             return x
 
@@ -497,7 +501,7 @@ class UPerNet(nn.Module):
             ppm_out.append(pool_conv(nn.functional.upsample(
                 pool_scale(conv5),
                 (input_size[2], input_size[3]),
-                mode='bilinear')))
+                mode='bilinear', align_corners=False)))
         ppm_out = torch.cat(ppm_out, 1)
         f = self.ppm_last_conv(ppm_out)
 
@@ -506,7 +510,8 @@ class UPerNet(nn.Module):
             conv_x = conv_out[i]
             conv_x = self.fpn_in[i](conv_x) # lateral branch
 
-            f = nn.functional.upsample(f, size=conv_x.size()[2:], mode='bilinear') # top-down branch
+            f = nn.functional.upsample(
+                f, size=conv_x.size()[2:], mode='bilinear', align_corners=False) # top-down branch
             f = conv_x + f
 
             fpn_feature_list.append(self.fpn_out[i](f))
@@ -518,12 +523,13 @@ class UPerNet(nn.Module):
             fusion_list.append(nn.functional.upsample(
                 fpn_feature_list[i],
                 output_size,
-                mode='bilinear'))
+                mode='bilinear', align_corners=False))
         fusion_out = torch.cat(fusion_list, 1)
         x = self.conv_last(fusion_out)
 
         if self.use_softmax:  # is True during inference
-            x = nn.functional.upsample(x, size=segSize, mode='bilinear')
+            x = nn.functional.upsample(
+                x, size=segSize, mode='bilinear', align_corners=False)
             x = nn.functional.softmax(x, dim=1)
             return x
 
