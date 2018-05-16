@@ -9,7 +9,6 @@ import numpy as np
 import math
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
 from scipy.io import loadmat
 # Our libs
 from dataset import ValDataset
@@ -55,7 +54,6 @@ def evaluate(segmentation_module, loader, args, dev_id, result_queue):
         with torch.no_grad():
             segSize = (seg_label.shape[0], seg_label.shape[1])
             pred = torch.zeros(1, args.num_class, segSize[0], segSize[1])
-            pred = Variable(pred).cuda()
 
             for img in img_resized_list:
                 feed_dict = batch_data.copy()
@@ -66,7 +64,7 @@ def evaluate(segmentation_module, loader, args, dev_id, result_queue):
 
                 # forward pass
                 pred_tmp = segmentation_module(feed_dict, segSize=segSize)
-                pred = pred + pred_tmp / len(args.imgSize)
+                pred = pred + pred_tmp.cpu() / len(args.imgSize)
 
             _, preds = torch.max(pred.data.cpu(), dim=1)
             preds = as_numpy(preds.squeeze(0))
@@ -85,7 +83,7 @@ def evaluate(segmentation_module, loader, args, dev_id, result_queue):
 
 def worker(args, dev_id, start_idx, end_idx, result_queue):
     torch.cuda.set_device(dev_id)
- 
+
     # Dataset and Loader
     dataset_val = ValDataset(
         args.list_val, args, max_sample=args.num_val,
@@ -96,16 +94,19 @@ def worker(args, dev_id, start_idx, end_idx, result_queue):
         shuffle=False,
         collate_fn=user_scattered_collate,
         num_workers=2)
-    
+
     # Network Builders
     builder = ModelBuilder()
-    net_encoder = builder.build_encoder(arch=args.arch_encoder,
-                                        fc_dim=args.fc_dim,
-                                        weights=args.weights_encoder)
-    net_decoder = builder.build_decoder(arch=args.arch_decoder,
-                                        fc_dim=args.fc_dim,
-                                        weights=args.weights_decoder,
-                                        use_softmax=True)
+    net_encoder = builder.build_encoder(
+        arch=args.arch_encoder,
+        fc_dim=args.fc_dim,
+        weights=args.weights_encoder)
+    net_decoder = builder.build_decoder(
+        arch=args.arch_decoder,
+        fc_dim=args.fc_dim,
+        num_class=args.num_class,
+        weights=args.weights_decoder,
+        use_softmax=True)
 
     crit = nn.NLLLoss(ignore_index=-1)
 
@@ -132,7 +133,7 @@ def main(args):
     nr_files_per_dev = math.ceil(nr_files / nr_devs)
 
     pbar = tqdm(total=nr_files)
-    
+
     acc_meter = AverageMeter()
     intersection_meter = AverageMeter()
     union_meter = AverageMeter()
@@ -146,7 +147,7 @@ def main(args):
         print('process:%d, start_idx:%d, end_idx:%d' % (dev_id, start_idx, end_idx))
         proc.start()
         procs.append(proc)
-   
+
     # master fetches results
     processed_counter = 0
     while processed_counter < nr_files:
@@ -158,10 +159,10 @@ def main(args):
         union_meter.update(union)
         processed_counter += 1
         pbar.update(1)
-    
+
     for p in procs:
         p.join()
-    
+
     iou = intersection_meter.sum / (union_meter.sum + 1e-10)
     for i, _iou in enumerate(iou):
         print('class [{}], IoU: {}'.format(i, _iou))
