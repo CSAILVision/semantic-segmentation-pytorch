@@ -7,7 +7,6 @@ from distutils.version import LooseVersion
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
 from scipy.io import loadmat
 # Our libs
 from dataset import TestDataset
@@ -48,7 +47,6 @@ def test(segmentation_module, loader, args):
 
         with torch.no_grad():
             pred = torch.zeros(1, args.num_class, segSize[0], segSize[1])
-            pred = Variable(pred).cuda()
 
             for img in img_resized_list:
                 feed_dict = batch_data.copy()
@@ -59,9 +57,9 @@ def test(segmentation_module, loader, args):
 
                 # forward pass
                 pred_tmp = segmentation_module(feed_dict, segSize=segSize)
-                pred = pred + pred_tmp / len(args.imgSize)
+                pred = pred + pred_tmp.cpu() / len(args.imgSize)
 
-            _, preds = torch.max(pred.data.cpu(), dim=1)
+            _, preds = torch.max(pred, dim=1)
             preds = as_numpy(preds.squeeze(0))
 
         # visualization
@@ -78,13 +76,16 @@ def main(args):
 
     # Network Builders
     builder = ModelBuilder()
-    net_encoder = builder.build_encoder(arch=args.arch_encoder,
-                                        fc_dim=args.fc_dim,
-                                        weights=args.weights_encoder)
-    net_decoder = builder.build_decoder(arch=args.arch_decoder,
-                                        fc_dim=args.fc_dim,
-                                        weights=args.weights_decoder,
-                                        use_softmax=True)
+    net_encoder = builder.build_encoder(
+        arch=args.arch_encoder,
+        fc_dim=args.fc_dim,
+        weights=args.weights_encoder)
+    net_decoder = builder.build_decoder(
+        arch=args.arch_decoder,
+        fc_dim=args.fc_dim,
+        num_class=args.num_class,
+        weights=args.weights_decoder,
+        use_softmax=True)
 
     crit = nn.NLLLoss(ignore_index=-1)
 
@@ -156,8 +157,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     print(args)
-
-    # torch.cuda.set_device(args.gpu_id)
 
     # absolute paths of model weights
     args.weights_encoder = os.path.join(args.model_path,
