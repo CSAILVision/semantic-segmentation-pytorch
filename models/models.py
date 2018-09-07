@@ -73,7 +73,18 @@ class ModelBuilder():
 
     def build_encoder(self, arch='resnet50_dilated8', fc_dim=512, weights=''):
         pretrained = True if len(weights) == 0 else False
-        if arch == 'resnet34':
+        if arch == 'resnet18':
+            orig_resnet = resnet.__dict__['resnet18'](pretrained=pretrained)
+            net_encoder = Resnet(orig_resnet)
+        elif arch == 'resnet18_dilated8':
+            orig_resnet = resnet.__dict__['resnet18'](pretrained=pretrained)
+            net_encoder = ResnetDilated(orig_resnet,
+                                        dilate_scale=8)
+        elif arch == 'resnet18_dilated16':
+            orig_resnet = resnet.__dict__['resnet18'](pretrained=pretrained)
+            net_encoder = ResnetDilated(orig_resnet,
+                                        dilate_scale=16)
+        elif arch == 'resnet34':
             raise NotImplementedError
             orig_resnet = resnet.__dict__['resnet34'](pretrained=pretrained)
             net_encoder = Resnet(orig_resnet)
