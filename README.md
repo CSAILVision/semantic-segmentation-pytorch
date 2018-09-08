@@ -63,12 +63,17 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     <th valign="bottom">Overall Score</th>
     <th valign="bottom">Training Time</th>
     <tr>
-        <td>ResNet-50_dilated8 + c1_bilinear_deepsup</td>
+        <td>ResNet18_dilated8 + ppm_bilinear_deepsup</td>
+        <td>No</td><td>38.00</td><td>78.64</td><td>58.32</td>
+        <td>1.1 * 20 = 22.0 hours</td>
+    </tr>
+    <tr>
+        <td>ResNet50_dilated8 + c1_bilinear_deepsup</td>
         <td>No</td><td>34.88</td><td>76.54</td><td>55.71</td>
         <td>1.38 * 20 = 27.6 hours</td>
     </tr>
     <tr>
-        <td rowspan="2">ResNet-50_dilated8 + ppm_bilinear_deepsup</td>
+        <td rowspan="2">ResNet50_dilated8 + ppm_bilinear_deepsup</td>
         <td>No</td><td>41.26</td><td>79.73</td><td>60.50</td>
         <td rowspan="2">1.67 * 20 = 33.4 hours</td>
     </tr>
@@ -76,7 +81,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>Yes</td><td>42.04</td><td>80.23</td><td>61.14</td>
     </tr>
     <tr>
-        <td rowspan="2">ResNet-101_dilated8 + ppm_bilinear_deepsup</td>
+        <td rowspan="2">ResNet101_dilated8 + ppm_bilinear_deepsup</td>
         <td>No</td><td>42.19</td><td>80.59</td><td>61.39</td>
         <td rowspan="2">3.82 * 25 = 95.5 hours</td>
     </tr>
@@ -84,7 +89,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>Yes</td><td>42.53</td><td>80.91</td><td>61.72</td>
     </tr>
     <tr>
-        <td rowspan="2"><b>UperNet-50</b></td>
+        <td rowspan="2"><b>UperNet50</b></td>
         <td>No</td><td>40.44</td><td>79.80</td><td>60.12</td>
         <td rowspan="2">1.75 * 20 = 35.0 hours</td>
     </tr>
@@ -92,7 +97,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>Yes</td><td>41.55</td><td>80.23</td><td>60.89</td>
     </tr>
     <tr>
-        <td rowspan="2"><b>UperNet-101</b></td>
+        <td rowspan="2"><b>UperNet101</b></td>
         <td>No</td><td>41.98</td><td>80.63</td><td>61.34</td>
         <td rowspan="2">2.5 * 25 = 62.5 hours</td>
     </tr>
@@ -113,7 +118,7 @@ The code is developed under the following configurations.
 - Hardware: 2-8 GPUs (with at least 12G GPU memories) (change ```[--num_gpus NUM_GPUS]``` accordingly)
 - Software: Ubuntu 16.04.3 LTS, CUDA 8.0, ***Python>=3.5***, ***PyTorch>=0.4.0***
 
-*Warning:* We don't support the outdated Python 2 anymore. PyTorch 0.4.0 or higher is required to run the codes.
+*Warning:* We don't support the outdated Python 2 anymore. PyTorch 0.4.0 or higher is required to run the code.
 
 ## Quick start: Test on an image using our trained model 
 1. Here is a simple demo to do inference on a single image:
@@ -140,12 +145,12 @@ usage: test.py [-h] --test_img TEST_IMG --model_path MODEL_PATH                 
 chmod +x download_ADE20K.sh
 ./download_ADE20K.sh
 ```
-2. Train a default network (ResNet-50_dilated8 + ppm_bilinear_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
+2. Train a default network (ResNet50_dilated8 + ppm_bilinear_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
 ```bash
 python3 train.py --num_gpus NUM_GPUS
 ```
 
-Train a UPerNet (e.g., ResNet-50 or ResNet-101)
+Train a UPerNet (e.g., ResNet50 or ResNet101 as encoder)
 ```bash
 python3 train.py --num_gpus NUM_GPUS --arch_encoder resnet50 --arch_decoder upernet 
 --segm_downsampling_rate 4 --padding_constant 32
@@ -184,13 +189,13 @@ usage: train.py [-h] [--id ID] [--arch_encoder ARCH_ENCODER]
 ```bash
 python3 eval.py --id MODEL_ID --suffix SUFFIX
 ```
-Evaluate a UPerNet (e.g, UPerNet-50)
+Evaluate a UPerNet (e.g, UPerNet50)
 ```bash
 python3 eval.py --id MODEL_ID --suffix SUFFIX 
 --arch_encoder resnet50 --arch_decoder upernet --padding_constant 32
 ```
 
-***We also provide a multi-GPU evaluation script.*** It is extremely easy to use. For example, to run the evaluation codes on 8 GPUs, simply add ```--device 0-7```. You can also choose which GPUs to use, for example, ```--device 0,2,4,6```.
+***We also provide a multi-GPU evaluation script.*** It is extremely easy to use. For example, to run the evaluation code on 8 GPUs, simply add ```--device 0-7```. You can also choose which GPUs to use, for example, ```--device 0,2,4,6```.
 ```bash
 python3 eval_multipro.py --id MODEL_ID --suffix SUFFIX --device DEVICE_ID
 ```
