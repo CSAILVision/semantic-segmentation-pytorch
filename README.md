@@ -39,6 +39,7 @@ Thanks to the efficient network design, we will soon opensource stronger models 
 We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling.
 
 Encoder: (resnetXX_dilatedYY: customized resnetXX with dilated convolutions, output feature map is 1/YY of input size.)
+- ResNet18: resnet18_dilated16, resnet18_dilated8
 - ResNet50: resnet50_dilated16, resnet50_dilated8
 - ResNet101: resnet101_dilated16, resnet101_dilated8
 
