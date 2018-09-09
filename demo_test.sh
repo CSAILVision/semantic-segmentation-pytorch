@@ -5,7 +5,7 @@ RESULT_PATH=./
 ENCODER=$MODEL_PATH/encoder_epoch_20.pth
 DECODER=$MODEL_PATH/decoder_epoch_20.pth
 
-if [ ! -e $ENCODER ]; then
+if [ ! -e $MODEL_PATH ]; then
   mkdir $MODEL_PATH
 fi
 if [ ! -e $ENCODER ]; then
@@ -15,7 +15,7 @@ if [ ! -e $DECODER ]; then
   wget -P $MODEL_PATH http://sceneparsing.csail.mit.edu/model/pytorch/$DECODER
 fi
 if [ ! -e $TEST_IMG ]; then
-  wget -P $RESULT_PATH http://sceneparsing.csail.mit.edu//data/ADEChallengeData2016/images/validation/$TEST_IMG
+  wget -P $RESULT_PATH http://sceneparsing.csail.mit.edu/data/ADEChallengeData2016/images/validation/$TEST_IMG
 fi
 
 python3 -u test.py \
