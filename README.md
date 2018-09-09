@@ -64,6 +64,11 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     <th valign="bottom">Overall Score</th>
     <th valign="bottom">Training Time</th>
     <tr>
+        <td>ResNet18_dilated8 + c1_bilinear_deepsup</td>
+        <td>No</td><td>33.82</td><td>76.05</td><td>54.94</td>
+        <td>0.42 * 20 = 8.4 hours</td>
+    </tr>
+    <tr>
         <td>ResNet18_dilated8 + ppm_bilinear_deepsup</td>
         <td>No</td><td>38.00</td><td>78.64</td><td>58.32</td>
         <td>1.1 * 20 = 22.0 hours</td>
