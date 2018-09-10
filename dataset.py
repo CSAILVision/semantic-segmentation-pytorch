@@ -7,9 +7,11 @@ from torchvision import transforms
 from scipy.misc import imread, imresize
 import numpy as np
 
+
 # Round x to the nearest multiple of p and x' >= x
 def round2nearest_multiple(x, p):
     return ((x - 1) // p + 1) * p
+
 
 class TrainDataset(torchdata.Dataset):
     def __init__(self, odgt, opt, max_sample=-1, batch_per_gpu=1):
@@ -32,7 +34,10 @@ class TrainDataset(torchdata.Dataset):
         # mean and std
         self.img_transform = transforms.Compose([
             transforms.Normalize(mean=[102.9801, 115.9465, 122.7717], std=[1., 1., 1.])
-            ])
+        ])
+
+        # how many layers used to do predictions
+        self.nr_layers = 4
 
         self.list_sample = [json.loads(x.rstrip()) for x in open(odgt, 'r')]
 
@@ -48,9 +53,9 @@ class TrainDataset(torchdata.Dataset):
             # get a sample record
             this_sample = self.list_sample[self.cur_idx]
             if this_sample['height'] > this_sample['width']:
-                self.batch_record_list[0].append(this_sample) # h > w, go to 1st class
+                self.batch_record_list[0].append(this_sample)  # h > w, go to 1st class
             else:
-                self.batch_record_list[1].append(this_sample) # h <= w, go to 2nd class
+                self.batch_record_list[1].append(this_sample)  # h <= w, go to 2nd class
 
             # update current sample pointer
             self.cur_idx += 1
@@ -88,8 +93,7 @@ class TrainDataset(torchdata.Dataset):
         batch_resized_size = np.zeros((self.batch_per_gpu, 2), np.int32)
         for i in range(self.batch_per_gpu):
             img_height, img_width = batch_records[i]['height'], batch_records[i]['width']
-            this_scale = min(this_short_size / min(img_height, img_width), \
-                    self.imgMaxSize / max(img_height, img_width))
+            this_scale = min(this_short_size / min(img_height, img_width), self.imgMaxSize / max(img_height, img_width))
             img_resized_height, img_resized_width = img_height * this_scale, img_width * this_scale
             batch_resized_size[i, :] = img_resized_height, img_resized_width
         batch_resized_height = np.max(batch_resized_size[:, 0])
@@ -99,11 +103,12 @@ class TrainDataset(torchdata.Dataset):
         batch_resized_height = int(round2nearest_multiple(batch_resized_height, self.padding_constant))
         batch_resized_width = int(round2nearest_multiple(batch_resized_width, self.padding_constant))
 
-        assert self.padding_constant >= self.segm_downsampling_rate,\
-                'padding constant must be equal or large than segm downsamping rate'
+        assert self.padding_constant >= self.segm_downsampling_rate, \
+            'padding constant must be equal or large than segm downsamping rate'
         batch_images = torch.zeros(self.batch_per_gpu, 3, batch_resized_height, batch_resized_width)
-        batch_segms = torch.zeros(self.batch_per_gpu, batch_resized_height // self.segm_downsampling_rate, \
-                                batch_resized_width // self.segm_downsampling_rate).long()
+        batch_segms = torch.zeros(self.nr_layers, self.batch_per_gpu,
+                                  batch_resized_height // self.segm_downsampling_rate,
+                                  batch_resized_width // self.segm_downsampling_rate).long()
 
         for i in range(self.batch_per_gpu):
             this_record = batch_records[i]
@@ -114,12 +119,12 @@ class TrainDataset(torchdata.Dataset):
             img = imread(image_path, mode='RGB')
             segm = imread(segm_path)
 
-            assert(img.ndim == 3)
-            assert(segm.ndim == 2)
-            assert(img.shape[0] == segm.shape[0])
-            assert(img.shape[1] == segm.shape[1])
+            assert (img.ndim == 3)
+            assert (segm.ndim == 2)
+            assert (img.shape[0] == segm.shape[0])
+            assert (img.shape[1] == segm.shape[1])
 
-            if self.random_flip == True:
+            if self.random_flip:
                 random_flip = np.random.choice([0, 1])
                 if random_flip == 1:
                     img = cv2.flip(img, 1)
@@ -135,26 +140,40 @@ class TrainDataset(torchdata.Dataset):
             segm_rounded = np.zeros((segm_rounded_height, segm_rounded_width), dtype='uint8')
             segm_rounded[:segm.shape[0], :segm.shape[1]] = segm
 
-            segm = imresize(segm_rounded, (segm_rounded.shape[0] // self.segm_downsampling_rate, \
-                                           segm_rounded.shape[1] // self.segm_downsampling_rate), \
+            segm = imresize(segm_rounded, (segm_rounded.shape[0] // self.segm_downsampling_rate,
+                                           segm_rounded.shape[1] // self.segm_downsampling_rate),
                             interp='nearest')
-             # image to float
-            img = img.astype(np.float32)[:, :, ::-1] # RGB to BGR!!!
+
+            # construct ground-truth label map for each layer
+            standard_segm_h, standard_segm_w = segm.shape[0], segm.shape[1]
+            for id_layer in reversed(range(self.nr_layers)):
+                # downsampling first
+                this_segm = imresize(segm, (standard_segm_h // (2 ** id_layer), standard_segm_w // (2 ** id_layer)),
+                                     interp='nearest')
+                # upsampling the downsampled segm
+                this_segm_upsampled = imresize(this_segm, (standard_segm_h, standard_segm_w), interp='nearest')
+                # for those labels that are still correct, we predict them at this layer
+                this_segm_gt = this_segm_upsampled * (segm == this_segm_upsampled)
+                batch_segms[id_layer][i][:standard_segm_h, :standard_segm_w] = torch.from_numpy(this_segm_gt.astype(np.int)).long()
+                # remove already assigned labels (keep unassigned labels)
+                segm = segm * (this_segm_gt == 0)
+
+            # image to float
+            img = img.astype(np.float32)[:, :, ::-1]  # RGB to BGR!!!
             img = img.transpose((2, 0, 1))
             img = self.img_transform(torch.from_numpy(img.copy()))
 
             batch_images[i][:, :img.shape[1], :img.shape[2]] = img
-            batch_segms[i][:segm.shape[0], :segm.shape[1]] = torch.from_numpy(segm.astype(np.int)).long()
 
-        batch_segms = batch_segms - 1 # label from -1 to 149
+        batch_segms = batch_segms - 1  # label from -1 to 149
         output = dict()
         output['img_data'] = batch_images
         output['seg_label'] = batch_segms
         return output
 
     def __len__(self):
-        return int(1e6) # It's a fake length due to the trick that every loader maintains its own list
-        #return self.num_sampleclass
+        return int(1e6)  # It's a fake length due to the trick that every loader maintains its own list
+        # return self.num_sampleclass
 
 
 class ValDataset(torchdata.Dataset):
@@ -168,14 +187,14 @@ class ValDataset(torchdata.Dataset):
         # mean and std
         self.img_transform = transforms.Compose([
             transforms.Normalize(mean=[102.9801, 115.9465, 122.7717], std=[1., 1., 1.])
-            ])
+        ])
 
         self.list_sample = [json.loads(x.rstrip()) for x in open(odgt, 'r')]
 
         if max_sample > 0:
             self.list_sample = self.list_sample[0:max_sample]
 
-        if start_idx >= 0 and end_idx >= 0: # divide file list
+        if start_idx >= 0 and end_idx >= 0:  # divide file list
             self.list_sample = self.list_sample[start_idx:end_idx]
 
         self.num_sample = len(self.list_sample)
@@ -188,7 +207,7 @@ class ValDataset(torchdata.Dataset):
         image_path = os.path.join(self.root_dataset, this_record['fpath_img'])
         segm_path = os.path.join(self.root_dataset, this_record['fpath_segm'])
         img = imread(image_path, mode='RGB')
-        img = img[:, :, ::-1] # BGR to RGB!!!
+        img = img[:, :, ::-1]  # BGR to RGB!!!
         segm = imread(segm_path)
 
         ori_height, ori_width, _ = img.shape
@@ -197,7 +216,7 @@ class ValDataset(torchdata.Dataset):
         for this_short_size in self.imgSize:
             # calculate target height and width
             scale = min(this_short_size / float(min(ori_height, ori_width)),
-                    self.imgMaxSize / float(max(ori_height, ori_width)))
+                        self.imgMaxSize / float(max(ori_height, ori_width)))
             target_height, target_width = int(ori_height * scale), int(ori_width * scale)
 
             # to avoid rounding in network
@@ -219,7 +238,7 @@ class ValDataset(torchdata.Dataset):
 
         batch_segms = torch.unsqueeze(segm, 0)
 
-        batch_segms = batch_segms - 1 # label from -1 to 149
+        batch_segms = batch_segms - 1  # label from -1 to 149
         output = dict()
         output['img_ori'] = img.copy()
         output['img_data'] = [x.contiguous() for x in img_resized_list]
@@ -243,7 +262,7 @@ class TestDataset(torchdata.Dataset):
         # mean and std
         self.img_transform = transforms.Compose([
             transforms.Normalize(mean=[102.9801, 115.9465, 122.7717], std=[1., 1., 1.])
-            ])
+        ])
 
         if isinstance(odgt, list):
             self.list_sample = odgt
@@ -261,7 +280,7 @@ class TestDataset(torchdata.Dataset):
         # load image and label
         image_path = this_record['fpath_img']
         img = imread(image_path, mode='RGB')
-        img = img[:, :, ::-1] # BGR to RGB!!!
+        img = img[:, :, ::-1]  # BGR to RGB!!!
 
         ori_height, ori_width, _ = img.shape
 
@@ -269,7 +288,7 @@ class TestDataset(torchdata.Dataset):
         for this_short_size in self.imgSize:
             # calculate target height and width
             scale = min(this_short_size / float(min(ori_height, ori_width)),
-                    self.imgMaxSize / float(max(ori_height, ori_width)))
+                        self.imgMaxSize / float(max(ori_height, ori_width)))
             target_height, target_width = int(ori_height * scale), int(ori_width * scale)
 
             # to avoid rounding in network

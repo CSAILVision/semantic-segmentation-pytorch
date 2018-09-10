@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torchvision
 from . import resnet, resnext
 from lib.nn import SynchronizedBatchNorm2d
@@ -9,13 +10,23 @@ class SegmentationModuleBase(nn.Module):
     def __init__(self):
         super(SegmentationModuleBase, self).__init__()
 
-    def pixel_acc(self, pred, label):
-        _, preds = torch.max(pred, dim=1)
-        valid = (label >= 0).long()
-        acc_sum = torch.sum(valid * (preds == label).long())
-        pixel_sum = torch.sum(valid)
+    @staticmethod
+    def pixel_acc(pred, label, nr_layers=4):
+        acc_sum, pixel_sum = 0, 0
+        for i in range(nr_layers):
+            _, preds = torch.max(pred[i], dim=1)
+            valid = (label[i] >= 0).long()
+            acc_sum += torch.sum(valid * (preds == label[i]).long())
+            pixel_sum += torch.sum(valid)
         acc = acc_sum.float() / (pixel_sum.float() + 1e-10)
         return acc
+
+    @staticmethod
+    def pixel_loss(pred, label, crit, nr_layers=4):
+        loss = 0
+        for i in range(nr_layers):
+            loss += crit(pred[i], label[i])
+        return loss
 
 
 class SegmentationModule(SegmentationModuleBase):
@@ -25,6 +36,7 @@ class SegmentationModule(SegmentationModuleBase):
         self.decoder = net_dec
         self.crit = crit
         self.deep_sup_scale = deep_sup_scale
+        self.nr_layers = 4
 
     def forward(self, feed_dict, *, segSize=None):
         if segSize is None: # training
@@ -33,7 +45,7 @@ class SegmentationModule(SegmentationModuleBase):
             else:
                 pred = self.decoder(self.encoder(feed_dict['img_data'], return_feature_maps=True))
 
-            loss = self.crit(pred, feed_dict['seg_label'])
+            loss = self.pixel_loss(pred, feed_dict['seg_label'], self.crit, self.nr_layers)
             if self.deep_sup_scale is not None:
                 loss_deepsup = self.crit(pred_deepsup, feed_dict['seg_label'])
                 loss = loss + loss_deepsup * self.deep_sup_scale
@@ -46,7 +58,7 @@ class SegmentationModule(SegmentationModuleBase):
 
 
 def conv3x3(in_planes, out_planes, stride=1, has_bias=False):
-    "3x3 convolution with padding"
+    """3x3 convolution with padding"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=1, bias=has_bias)
 
@@ -59,9 +71,13 @@ def conv3x3_bn_relu(in_planes, out_planes, stride=1):
             )
 
 
-class ModelBuilder():
+class ModelBuilder:
+    def __init__(self):
+        pass
+
     # custom weights initialization
-    def weights_init(self, m):
+    @staticmethod
+    def weights_init(m):
         classname = m.__class__.__name__
         if classname.find('Conv') != -1:
             nn.init.kaiming_normal_(m.weight.data)
@@ -164,12 +180,6 @@ class ModelBuilder():
                 fpn_dim=256)
         elif arch == 'upernet':
             net_decoder = UPerNet(
-                num_class=num_class,
-                fc_dim=fc_dim,
-                use_softmax=use_softmax,
-                fpn_dim=512)
-        elif arch == 'upernet_tmp':
-            net_decoder = UPerNetTmp(
                 num_class=num_class,
                 fc_dim=fc_dim,
                 use_softmax=use_softmax,
@@ -306,9 +316,9 @@ class C1BilinearDeepSup(nn.Module):
         x = self.conv_last(x)
 
         if self.use_softmax:  # is True during inference
-            x = nn.functional.upsample(
+            x = F.upsample(
                 x, size=segSize, mode='bilinear', align_corners=False)
-            x = nn.functional.softmax(x, dim=1)
+            x = F.softmax(x, dim=1)
             return x
 
         # deep sup
@@ -316,8 +326,8 @@ class C1BilinearDeepSup(nn.Module):
         _ = self.cbr_deepsup(conv4)
         _ = self.conv_last_deepsup(_)
 
-        x = nn.functional.log_softmax(x, dim=1)
-        _ = nn.functional.log_softmax(_, dim=1)
+        x = F.log_softmax(x, dim=1)
+        _ = F.log_softmax(_, dim=1)
 
         return (x, _)
 
@@ -339,11 +349,11 @@ class C1Bilinear(nn.Module):
         x = self.conv_last(x)
 
         if self.use_softmax: # is True during inference
-            x = nn.functional.upsample(
+            x = F.upsample(
                 x, size=segSize, mode='bilinear', align_corners=False)
-            x = nn.functional.softmax(x, dim=1)
+            x = F.softmax(x, dim=1)
         else:
-            x = nn.functional.log_softmax(x, dim=1)
+            x = F.log_softmax(x, dim=1)
 
         return x
 
@@ -380,7 +390,7 @@ class PPMBilinear(nn.Module):
         input_size = conv5.size()
         ppm_out = [conv5]
         for pool_scale in self.ppm:
-            ppm_out.append(nn.functional.upsample(
+            ppm_out.append(F.upsample(
                 pool_scale(conv5),
                 (input_size[2], input_size[3]),
                 mode='bilinear', align_corners=False))
@@ -389,11 +399,11 @@ class PPMBilinear(nn.Module):
         x = self.conv_last(ppm_out)
 
         if self.use_softmax:  # is True during inference
-            x = nn.functional.upsample(
+            x = F.upsample(
                 x, size=segSize, mode='bilinear', align_corners=False)
-            x = nn.functional.softmax(x, dim=1)
+            x = F.softmax(x, dim=1)
         else:
-            x = nn.functional.log_softmax(x, dim=1)
+            x = F.log_softmax(x, dim=1)
         return x
 
 
@@ -432,7 +442,7 @@ class PPMBilinearDeepsup(nn.Module):
         input_size = conv5.size()
         ppm_out = [conv5]
         for pool_scale in self.ppm:
-            ppm_out.append(nn.functional.upsample(
+            ppm_out.append(F.upsample(
                 pool_scale(conv5),
                 (input_size[2], input_size[3]),
                 mode='bilinear', align_corners=False))
@@ -441,9 +451,9 @@ class PPMBilinearDeepsup(nn.Module):
         x = self.conv_last(ppm_out)
 
         if self.use_softmax:  # is True during inference
-            x = nn.functional.upsample(
+            x = F.upsample(
                 x, size=segSize, mode='bilinear', align_corners=False)
-            x = nn.functional.softmax(x, dim=1)
+            x = F.softmax(x, dim=1)
             return x
 
         # deep sup
@@ -452,10 +462,10 @@ class PPMBilinearDeepsup(nn.Module):
         _ = self.dropout_deepsup(_)
         _ = self.conv_last_deepsup(_)
 
-        x = nn.functional.log_softmax(x, dim=1)
-        _ = nn.functional.log_softmax(_, dim=1)
+        x = F.log_softmax(x, dim=1)
+        _ = F.log_softmax(_, dim=1)
 
-        return (x, _)
+        return x, _
 
 
 # upernet
@@ -498,10 +508,9 @@ class UPerNet(nn.Module):
             ))
         self.fpn_out = nn.ModuleList(self.fpn_out)
 
-        self.conv_last = nn.Sequential(
-            conv3x3_bn_relu(len(fpn_inplanes) * fpn_dim, fpn_dim, 1),
-            nn.Conv2d(fpn_dim, num_class, kernel_size=1)
-        )
+        self.conv_last = nn.ModuleList()
+        for i in range(len(fpn_inplanes)):
+            self.conv_last.append(nn.Conv2d(fpn_dim, num_class, kernel_size=1))
 
     def forward(self, conv_out, segSize=None):
         conv5 = conv_out[-1]
@@ -509,7 +518,7 @@ class UPerNet(nn.Module):
         input_size = conv5.size()
         ppm_out = [conv5]
         for pool_scale, pool_conv in zip(self.ppm_pooling, self.ppm_conv):
-            ppm_out.append(pool_conv(nn.functional.upsample(
+            ppm_out.append(pool_conv(F.upsample(
                 pool_scale(conv5),
                 (input_size[2], input_size[3]),
                 mode='bilinear', align_corners=False)))
@@ -521,7 +530,7 @@ class UPerNet(nn.Module):
             conv_x = conv_out[i]
             conv_x = self.fpn_in[i](conv_x) # lateral branch
 
-            f = nn.functional.upsample(
+            f = F.upsample(
                 f, size=conv_x.size()[2:], mode='bilinear', align_corners=False) # top-down branch
             f = conv_x + f
 
@@ -529,21 +538,17 @@ class UPerNet(nn.Module):
 
         fpn_feature_list.reverse() # [P2 - P5]
         output_size = fpn_feature_list[0].size()[2:]
-        fusion_list = [fpn_feature_list[0]]
-        for i in range(1, len(fpn_feature_list)):
-            fusion_list.append(nn.functional.upsample(
-                fpn_feature_list[i],
-                output_size,
-                mode='bilinear', align_corners=False))
-        fusion_out = torch.cat(fusion_list, 1)
-        x = self.conv_last(fusion_out)
+        output_list = []
+
+        for i in range(len(fpn_feature_list)):
+            x = self.conv_last[i](fpn_feature_list[i])
+            x = F.upsample(x, size=output_size, mode='bilinear', align_corners=False)
+            output_list.append(x)
 
         if self.use_softmax:  # is True during inference
-            x = nn.functional.upsample(
-                x, size=segSize, mode='bilinear', align_corners=False)
-            x = nn.functional.softmax(x, dim=1)
-            return x
+            output_list = [F.upsample(x, size=segSize, mode='bilinear', align_corners=False) for x in output_list]
+            output_list = [torch.softmax(x, dim=1) for x in output_list]
+            return output_list
 
-        x = nn.functional.log_softmax(x, dim=1)
-
-        return x
+        output_list = [torch.log_softmax(x, dim=1) for x in output_list]
+        return output_list
