@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 from . import resnet, resnext
-from lib.nn import SynchronizedBatchNorm2d
+from lib.nn import SynchronizedBatchNorm2d, PrRoIPool2D
 
 
 class SegmentationModuleBase(nn.Module):
@@ -27,7 +27,6 @@ class SegmentationModule(SegmentationModuleBase):
         self.decoder = net_dec
         self.crit = crit
         self.deep_sup_scale = deep_sup_scale
-        self.nr_layers = 4
 
     def forward(self, feed_dict, *, segSize=None):
         if segSize is None: # training
@@ -76,7 +75,7 @@ class ModelBuilder:
     def weights_init(m):
         classname = m.__class__.__name__
         if classname.find('Conv') != -1:
-            nn.init.kaiming_normal_(m.weight.data)
+            nn.init.kaiming_normal_(m.weight.data, nonlinearity='relu')
         elif classname.find('BatchNorm') != -1:
             m.weight.data.fill_(1.)
             m.bias.data.fill_(1e-4)
@@ -477,7 +476,8 @@ class UPerNet(nn.Module):
         self.ppm_conv = []
 
         for scale in pool_scales:
-            self.ppm_pooling.append(nn.AdaptiveAvgPool2d(scale))
+            # we use the feature map size instead of input size, so scale = 1.0
+            self.ppm_pooling.append(PrRoIPool2D(scale, scale, 1.))
             self.ppm_conv.append(nn.Sequential(
                 nn.Conv2d(fc_dim, 512, kernel_size=1, bias=False),
                 SynchronizedBatchNorm2d(512),
@@ -513,9 +513,15 @@ class UPerNet(nn.Module):
 
         input_size = conv5.size()
         ppm_out = [conv5]
+
+        roi = []
+        for i in range(input_size[0]): # batch size
+            roi.append(torch.Tensor([i, 0, 0, input_size[3], input_size[2]]).view(1, -1)) # b, x0, y0, x1, y1
+        roi = torch.cat(roi, dim=0).type_as(conv5)
+        ppm_out = [conv5]
         for pool_scale, pool_conv in zip(self.ppm_pooling, self.ppm_conv):
-            ppm_out.append(pool_conv(F.upsample(
-                pool_scale(conv5),
+            ppm_out.append(pool_conv(nn.functional.upsample(
+                pool_scale(conv5, roi.detach()),
                 (input_size[2], input_size[3]),
                 mode='bilinear', align_corners=False)))
         ppm_out = torch.cat(ppm_out, 1)
