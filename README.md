@@ -231,13 +231,14 @@ Scene Parsing through ADE20K Dataset. B. Zhou, H. Zhao, X. Puig, S. Fidler, A. B
         year={2017}
     }
     
-Unified Perceptual Parsing for Scene Understanding. T. Xiao, Y. Liu, B. Zhou, Y. Jiang, and J. Sun. arXiv preprint
+Unified Perceptual Parsing for Scene Understanding. T. Xiao, Y. Liu, B. Zhou, Y. Jiang, and J. Sun. European Conference on Computer Vision (ECCV), 2018. (https://arxiv.org/abs/1807.10221)
 
-    @article{xiao2018unified,
+    @inproceedings{xiao2018unified,
       title={Unified Perceptual Parsing for Scene Understanding},
       author={Xiao, Tete and Liu, Yingcheng and Zhou, Bolei and Jiang, Yuning and Sun, Jian},
-      journal={arXiv preprint},
-      year={2018}
+      booktitle={European Conference on Computer Vision},
+      year={2018},
+      organization={Springer}
     }
     
 Semantic Understanding of Scenes through ADE20K Dataset. B. Zhou, H. Zhao, X. Puig, S. Fidler, A. Barriuso and A. Torralba. arXiv:1608.05442. (https://arxiv.org/pdf/1608.05442.pdf)
