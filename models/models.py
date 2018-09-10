@@ -11,22 +11,13 @@ class SegmentationModuleBase(nn.Module):
         super(SegmentationModuleBase, self).__init__()
 
     @staticmethod
-    def pixel_acc(pred, label, nr_layers=4):
-        acc_sum, pixel_sum = 0, 0
-        for i in range(nr_layers):
-            _, preds = torch.max(pred[i], dim=1)
-            valid = (label[i] >= 0).long()
-            acc_sum += torch.sum(valid * (preds == label[i]).long())
-            pixel_sum += torch.sum(valid)
+    def pixel_acc(pred, label):
+        _, preds = torch.max(pred, dim=1)
+        valid = (label >= 0).long()
+        acc_sum = torch.sum(valid * (preds == label).long())
+        pixel_sum = torch.sum(valid)
         acc = acc_sum.float() / (pixel_sum.float() + 1e-10)
         return acc
-
-    @staticmethod
-    def pixel_loss(pred, label, crit, nr_layers=4):
-        loss = 0
-        for i in range(nr_layers):
-            loss += crit(pred[i], label[i])
-        return loss
 
 
 class SegmentationModule(SegmentationModuleBase):
@@ -45,12 +36,17 @@ class SegmentationModule(SegmentationModuleBase):
             else:
                 pred = self.decoder(self.encoder(feed_dict['img_data'], return_feature_maps=True))
 
-            loss = self.pixel_loss(pred, feed_dict['seg_label'], self.crit, self.nr_layers)
+            # all maps resize to batch size
+            seg_label = feed_dict['seg_label']
+            seg_label = seg_label.view(-1, seg_label.size(2), seg_label.size(3)) # (b, h, w)
+            pred = torch.cat(pred, dim=0).view(-1, pred[0].size(1), seg_label.size(1), seg_label.size(2)) # (b, c, h, w)
+            
+            loss = self.crit(pred, seg_label)
             if self.deep_sup_scale is not None:
                 loss_deepsup = self.crit(pred_deepsup, feed_dict['seg_label'])
                 loss = loss + loss_deepsup * self.deep_sup_scale
 
-            acc = self.pixel_acc(pred, feed_dict['seg_label'])
+            acc = self.pixel_acc(pred, seg_label)
             return loss, acc
         else: # inference
             pred = self.decoder(self.encoder(feed_dict['img_data'], return_feature_maps=True), segSize=segSize)
