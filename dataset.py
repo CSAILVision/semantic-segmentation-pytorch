@@ -184,6 +184,9 @@ class ValDataset(torchdata.Dataset):
         # max down sampling rate of network to avoid rounding during conv or pooling
         self.padding_constant = opt.padding_constant
 
+        # how many layers used to do predictions
+        self.nr_layers = 4
+
         # mean and std
         self.img_transform = transforms.Compose([
             transforms.Normalize(mean=[102.9801, 115.9465, 122.7717], std=[1., 1., 1.])
@@ -207,12 +210,13 @@ class ValDataset(torchdata.Dataset):
         image_path = os.path.join(self.root_dataset, this_record['fpath_img'])
         segm_path = os.path.join(self.root_dataset, this_record['fpath_segm'])
         img = imread(image_path, mode='RGB')
-        img = img[:, :, ::-1]  # BGR to RGB!!!
-        segm = imread(segm_path)
+        img = img[:, :, ::-1]  # RGB to BGR!!!
+        segm_ori = imread(segm_path)
 
         ori_height, ori_width, _ = img.shape
 
         img_resized_list = []
+        segm_gt_list = []
         for this_short_size in self.imgSize:
             # calculate target height and width
             scale = min(this_short_size / float(min(ori_height, ori_width)),
@@ -234,15 +238,31 @@ class ValDataset(torchdata.Dataset):
             img_resized = torch.unsqueeze(img_resized, 0)
             img_resized_list.append(img_resized)
 
-        segm = torch.from_numpy(segm.astype(np.int)).long()
+            # construct ground-truth label map for each layer
+            standard_segm_h, standard_segm_w = segm_ori.shape[0], segm_ori.shape[1]
+            segm = segm_ori.copy()
+            for id_layer in reversed(range(self.nr_layers)):
+                # downsampling first
+                this_segm = imresize(segm, (target_height // (2 ** (2+id_layer)), target_width // (2 ** (2+id_layer))),
+                                     interp='nearest')
+                # upsampling the downsampled segm
+                this_segm_upsampled = imresize(this_segm, (standard_segm_h, standard_segm_w), interp='nearest')
+                # for those labels that are still correct, we predict them at this layer
+                this_segm_gt = this_segm_upsampled * (segm == this_segm_upsampled)
+                segm_gt_list.append(torch.from_numpy(this_segm_gt.astype(np.int)).long()-1)
+                # remove already assigned labels (keep unassigned labels)
+                segm = segm * (this_segm_gt == 0)
 
-        batch_segms = torch.unsqueeze(segm, 0)
+        segm_ori = torch.from_numpy(segm_ori.astype(np.int)).long()
+
+        batch_segms = torch.unsqueeze(segm_ori, 0)
 
         batch_segms = batch_segms - 1  # label from -1 to 149
         output = dict()
         output['img_ori'] = img.copy()
         output['img_data'] = [x.contiguous() for x in img_resized_list]
         output['seg_label'] = batch_segms.contiguous()
+        output['seg_gt_list'] = segm_gt_list
         output['info'] = this_record['fpath_img']
         return output
 

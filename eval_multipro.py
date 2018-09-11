@@ -39,6 +39,11 @@ def visualize_result(data, preds, args):
     cv2.imwrite(os.path.join(args.result,
                 img_name.replace('.jpg', '.png')), im_vis)
 
+def get_pred_map_via_gt(seg_gt_list, pred_list):
+    pred_map = torch.zeros_like(pred_list[0]).type_as(pred_list[0])
+    for this_seg_gt, this_pred in zip(seg_gt_list, pred_list):
+        pred_map += (this_seg_gt >= 0).long().unsqueeze(0) * this_pred
+    return pred_map
 
 def evaluate(segmentation_module, loader, args, dev_id, result_queue):
 
@@ -50,6 +55,7 @@ def evaluate(segmentation_module, loader, args, dev_id, result_queue):
         seg_label = as_numpy(batch_data['seg_label'][0])
 
         img_resized_list = batch_data['img_data']
+        seg_gt_list = batch_data['seg_gt_list']
 
         with torch.no_grad():
             segSize = (seg_label.shape[0], seg_label.shape[1])
@@ -60,11 +66,12 @@ def evaluate(segmentation_module, loader, args, dev_id, result_queue):
                 feed_dict['img_data'] = img
                 del feed_dict['img_ori']
                 del feed_dict['info']
+                del feed_dict['seg_gt_list']
                 feed_dict = async_copy_to(feed_dict, dev_id)
 
                 # forward pass
-                pred_tmp = segmentation_module(feed_dict, segSize=segSize)
-                pred = pred + pred_tmp.cpu() / len(args.imgSize)
+                pred_list = segmentation_module(feed_dict, segSize=segSize)
+                pred = pred + get_pred_map_via_gt(seg_gt_list, pred_list).cpu() / len(args.imgSize)
 
             _, preds = torch.max(pred.data.cpu(), dim=1)
             preds = as_numpy(preds.squeeze(0))
