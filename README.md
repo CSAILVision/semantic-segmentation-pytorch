@@ -6,7 +6,7 @@ ADE20K is the largest open source dataset for semantic segmentation and scene pa
 https://github.com/CSAILVision/sceneparsing
 
 Pretrained models can be found at:
-http://sceneparsing.csail.mit.edu/model/
+http://sceneparsing.csail.mit.edu/model/pytorch
 
 <img src="./teaser/ADE_val_00000278.png" width="900"/>
 <img src="./teaser/ADE_val_00001519.png" width="900"/>
@@ -64,19 +64,28 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     <th valign="bottom">Overall Score</th>
     <th valign="bottom">Training Time</th>
     <tr>
-        <td>ResNet18_dilated8 + c1_bilinear_deepsup</td>
+        <td rowspan="2">ResNet18_dilated8 + c1_bilinear_deepsup</td>
         <td>No</td><td>33.82</td><td>76.05</td><td>54.94</td>
-        <td>0.42 * 20 = 8.4 hours</td>
+        <td rowspan="2">0.42 * 20 = 8.4 hours</td>
     </tr>
     <tr>
-        <td>ResNet18_dilated8 + ppm_bilinear_deepsup</td>
+        <td>Yes</td><td>35.34</td><td>77.41</td><td>56.38</td>
+    </tr>
+    <tr>
+        <td rowspan="2">ResNet18_dilated8 + ppm_bilinear_deepsup</td>
         <td>No</td><td>38.00</td><td>78.64</td><td>58.32</td>
-        <td>1.1 * 20 = 22.0 hours</td>
+        <td rowspan="2">1.1 * 20 = 22.0 hours</td>
     </tr>
     <tr>
-        <td>ResNet50_dilated8 + c1_bilinear_deepsup</td>
+        <td>Yes</td><td>38.81</td><td>79.29</td><td>59.05</td>
+    </tr>
+    <tr>
+        <td rowspan="2">ResNet50_dilated8 + c1_bilinear_deepsup</td>
         <td>No</td><td>34.88</td><td>76.54</td><td>55.71</td>
-        <td>1.38 * 20 = 27.6 hours</td>
+        <td rowspan="2">1.38 * 20 = 27.6 hours</td>
+    </tr>
+    <tr>
+        <td>Yes</td><td>35.49</td><td>77.53</td><td>56.66</td>
     </tr>
     <tr>
         <td rowspan="2">ResNet50_dilated8 + ppm_bilinear_deepsup</td>
