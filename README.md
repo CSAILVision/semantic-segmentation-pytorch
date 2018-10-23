@@ -5,14 +5,14 @@ This is a PyTorch implementation of semantic segmentation models on MIT ADE20K s
 ADE20K is the largest open source dataset for semantic segmentation and scene parsing, released by MIT Computer Vision team. Follow the link below to find the repository for our dataset and implementations on Caffe and Torch7:
 https://github.com/CSAILVision/sceneparsing
 
-Pretrained models can be found at:
+All pretrained models can be found at:
 http://sceneparsing.csail.mit.edu/model/pytorch
 
 <img src="./teaser/ADE_val_00000278.png" width="900"/>
 <img src="./teaser/ADE_val_00001519.png" width="900"/>
 [From left to right: Test Image, Ground Truth, Predicted Result]
 
-## Highlights [NEW!]
+## Highlights
 
 ### Syncronized Batch Normalization on PyTorch
 This module differs from the built-in PyTorch BatchNorm as the mean and standard-deviation are reduced across all devices during training. The importance of synchronized batch normalization in object detection has been recently proved with a an extensive analysis in the paper [MegDet: A Large Mini-Batch Object Detector](https://arxiv.org/abs/1711.07240), and we empirically find that it is also important for segmentation.
@@ -30,9 +30,9 @@ Different from image classification task, where the input images are resized to 
 So we re-implement the `DataParallel` module, and make it support distributing data to multiple GPUs in python dict. At the same time, the dataloader also operates differently. *Now the batch size of a dataloader always equals to the number of GPUs*, each element will be sent to a GPU. It is also compatible with multi-processing. Note that the file index for the multi-processing dataloader is stored on the master process, which is in contradict to our goal that each worker maintains its own file list. So we use a trick that although the master process still gives dataloader an index for `__getitem__` function, we just ignore such request and send a random batch dict. Also, *the multiple workers forked by the dataloader all have the same seed*, you will find that multiple workers will yield exactly the same data, if we use the above-mentioned trick directly. Therefore, we add one line of code which sets the defaut seed for `numpy.random` before activating multiple worker in dataloader.
 
 ### An Efficient and Effective Framework: UPerNet
-UPerNet based on Feature Pyramid Network (FPN) and Pyramid Pooling Module (PPM), with down-sampling rate of 4, 8 and 16. It doesn't need dilated convolution, a operator that is time-and-memory consuming. *Without bells and whistles*, it is comparable or even better compared with PSPNet, while requires much shorter training time and less GPU memory. E.g., you cannot train a PSPNet-101 on TITAN Xp GPUs with only 12GB memory, while you can train a UPerNet-101 on such GPUs. 
+UPerNet based on Feature Pyramid Network (FPN) and Pyramid Pooling Module (PPM), with down-sampling rate of 4, 8 and 16. It doesn't need dilated convolution, an operator that is time-and-memory consuming. *Without bells and whistles*, it is comparable or even better compared with PSPNet, while requires much shorter training time and less GPU memory. E.g., you cannot train a PSPNet-101 on TITAN Xp GPUs with only 12GB memory, while you can train a UPerNet-101 on such GPUs. 
 
-Thanks to the efficient network design, we will soon opensource stronger models of UPerNet based on ResNeXt that is able to run on normal GPUs. 
+Thanks to the efficient network design, we will soon open source stronger models of UPerNet based on ResNeXt that is able to run on normal GPUs. 
 
 
 ## Supported models
@@ -131,7 +131,7 @@ The speed is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GP
 ## Environment
 The code is developed under the following configurations.
 - Hardware: 2-8 GPUs (with at least 12G GPU memories) (change ```[--num_gpus NUM_GPUS]``` accordingly)
-- Software: Ubuntu 16.04.3 LTS, CUDA 8.0, ***Python>=3.5***, ***PyTorch>=0.4.0***
+- Software: Ubuntu 16.04.3 LTS, ***CUDA>=8.0, Python>=3.5, PyTorch>=0.4.0***
 
 *Warning:* We don't support the outdated Python 2 anymore. PyTorch 0.4.0 or higher is required to run the code.
 
