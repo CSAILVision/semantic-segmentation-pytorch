@@ -131,7 +131,7 @@ The speed is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GP
 ## Environment
 The code is developed under the following configurations.
 - Hardware: 2-8 GPUs (with at least 12G GPU memories) (change ```[--num_gpus NUM_GPUS]``` accordingly)
-- Software: Ubuntu 16.04.3 LTS, CUDA 8.0, ***Python>=3.5***, ***PyTorch>=0.4.0***
+- Software: Ubuntu 16.04.3 LTS, ***CUDA>=8.0, Python>=3.5, PyTorch>=0.4.0***
 
 *Warning:* We don't support the outdated Python 2 anymore. PyTorch 0.4.0 or higher is required to run the code.
 
