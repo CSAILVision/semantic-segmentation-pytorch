@@ -20,9 +20,10 @@ import lib.utils.data as torchdata
 import cv2
 from tqdm import tqdm
 
+colors = loadmat('data/color150.mat')['colors']
+
 
 def visualize_result(data, preds, args):
-    colors = loadmat('data/color150.mat')['colors']
     (img, seg, info) = data
 
     # segmentation

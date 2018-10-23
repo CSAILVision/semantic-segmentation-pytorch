@@ -17,9 +17,10 @@ from lib.utils import as_numpy, mark_volatile
 import lib.utils.data as torchdata
 import cv2
 
+colors = loadmat('data/color150.mat')['colors']
+
 
 def visualize_result(data, preds, args):
-    colors = loadmat('data/color150.mat')['colors']
     (img, seg, info) = data
 
     # segmentation
