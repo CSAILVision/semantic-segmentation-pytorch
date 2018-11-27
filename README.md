@@ -231,6 +231,15 @@ usage: eval.py [-h] --id ID [--suffix SUFFIX] [--arch_encoder ARCH_ENCODER]
 
 If you find the code or pre-trained models useful, please cite the following papers:
 
+Semantic Understanding of Scenes through ADE20K Dataset. B. Zhou, H. Zhao, X. Puig, T. Xiao, S. Fidler, A. Barriuso and A. Torralba. International Journal on Computer Vision (IJCV), 2018. (https://arxiv.org/pdf/1608.05442.pdf)
+
+    @article{zhou2018semantic,
+      title={Semantic understanding of scenes through the ade20k dataset},
+      author={Zhou, Bolei and Zhao, Hang and Puig, Xavier and Xiao, Tete and Fidler, Sanja and Barriuso, Adela and Torralba, Antonio},
+      journal={International Journal on Computer Vision},
+      year={2018}
+    }
+
 Scene Parsing through ADE20K Dataset. B. Zhou, H. Zhao, X. Puig, S. Fidler, A. Barriuso and A. Torralba. Computer Vision and Pattern Recognition (CVPR), 2017. (http://people.csail.mit.edu/bzhou/publication/scene-parse-camera-ready.pdf)
 
     @inproceedings{zhou2017scene,
@@ -240,21 +249,3 @@ Scene Parsing through ADE20K Dataset. B. Zhou, H. Zhao, X. Puig, S. Fidler, A. B
         year={2017}
     }
     
-Unified Perceptual Parsing for Scene Understanding. T. Xiao, Y. Liu, B. Zhou, Y. Jiang, and J. Sun. European Conference on Computer Vision (ECCV), 2018. (https://arxiv.org/abs/1807.10221)
-
-    @inproceedings{xiao2018unified,
-      title={Unified Perceptual Parsing for Scene Understanding},
-      author={Xiao, Tete and Liu, Yingcheng and Zhou, Bolei and Jiang, Yuning and Sun, Jian},
-      booktitle={European Conference on Computer Vision},
-      year={2018},
-      organization={Springer}
-    }
-    
-Semantic Understanding of Scenes through ADE20K Dataset. B. Zhou, H. Zhao, X. Puig, S. Fidler, A. Barriuso and A. Torralba. arXiv:1608.05442. (https://arxiv.org/pdf/1608.05442.pdf)
-
-    @article{zhou2016semantic,
-      title={Semantic understanding of scenes through the ade20k dataset},
-      author={Zhou, Bolei and Zhao, Hang and Puig, Xavier and Fidler, Sanja and Barriuso, Adela and Torralba, Antonio},
-      journal={arXiv preprint arXiv:1608.05442},
-      year={2016}
-    }
