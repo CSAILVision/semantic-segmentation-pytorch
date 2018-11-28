@@ -47,11 +47,11 @@ Encoder:
 - ResNeXt101dilated
 
 Decoder:
-- c1 (1 conv)
-- c1_deepsup (c1 + deep supervision trick)
-- ppm (pyramid pooling, see [PSPNet](https://hszhao.github.io/projects/pspnet) paper for details)
-- ppm_deepsup (ppm + deep supervision trick)
-- upernet (pyramid pooling + FPN head)
+- C1 (1 conv)
+- C1_deepsup (C1 + deep supervision trick)
+- PPM (Pyramid Pooling Module, see [PSPNet](https://hszhao.github.io/projects/pspnet) paper for details)
+- PPM_deepsup (PPM + deep supervision trick)
+- UperNet (Pyramid Pooling + FPN head)
 
 ## Performance:
 IMPORTANT: We use our self-trained base model on ImageNet. The model takes the input in BGR form (consistent with opencv) instead of RGB form as used by default implementation of PyTorch. The base model will be automatically downloaded when needed.
@@ -64,7 +64,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     <th valign="bottom">Overall Score</th>
     <th valign="bottom">Training Time</th>
     <tr>
-        <td rowspan="2">ResNet18dilated + c1_deepsup</td>
+        <td rowspan="2">ResNet18dilated + C1_deepsup</td>
         <td>No</td><td>33.82</td><td>76.05</td><td>54.94</td>
         <td rowspan="2">0.42 * 20 = 8.4 hours</td>
     </tr>
@@ -72,7 +72,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>Yes</td><td>35.34</td><td>77.41</td><td>56.38</td>
     </tr>
     <tr>
-        <td rowspan="2">ResNet18dilated + ppm_deepsup</td>
+        <td rowspan="2">ResNet18dilated + PPM_deepsup</td>
         <td>No</td><td>38.00</td><td>78.64</td><td>58.32</td>
         <td rowspan="2">1.1 * 20 = 22.0 hours</td>
     </tr>
@@ -80,7 +80,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>Yes</td><td>38.81</td><td>79.29</td><td>59.05</td>
     </tr>
     <tr>
-        <td rowspan="2">ResNet50dilated + c1_deepsup</td>
+        <td rowspan="2">ResNet50dilated + C1_deepsup</td>
         <td>No</td><td>34.88</td><td>76.54</td><td>55.71</td>
         <td rowspan="2">1.38 * 20 = 27.6 hours</td>
     </tr>
@@ -88,7 +88,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>Yes</td><td>35.49</td><td>77.53</td><td>56.66</td>
     </tr>
     <tr>
-        <td rowspan="2">ResNet50dilated + ppm_deepsup</td>
+        <td rowspan="2">ResNet50dilated + PPM_deepsup</td>
         <td>No</td><td>41.26</td><td>79.73</td><td>60.50</td>
         <td rowspan="2">1.67 * 20 = 33.4 hours</td>
     </tr>
@@ -96,7 +96,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>Yes</td><td>42.04</td><td>80.23</td><td>61.14</td>
     </tr>
     <tr>
-        <td rowspan="2">ResNet101dilated + ppm_deepsup</td>
+        <td rowspan="2">ResNet101dilated + PPM_deepsup</td>
         <td>No</td><td>42.19</td><td>80.59</td><td>61.39</td>
         <td rowspan="2">3.82 * 25 = 95.5 hours</td>
     </tr>
@@ -160,7 +160,7 @@ usage: test.py [-h] --test_img TEST_IMG --model_path MODEL_PATH                 
 chmod +x download_ADE20K.sh
 ./download_ADE20K.sh
 ```
-2. Train a default network (ResNet50dilated + ppm_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
+2. Train a default network (ResNet50dilated + PPM_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
 ```bash
 python3 train.py --num_gpus NUM_GPUS
 ```
