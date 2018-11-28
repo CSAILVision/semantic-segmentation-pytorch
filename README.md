@@ -38,19 +38,19 @@ Thanks to the efficient network design, we will soon open source stronger models
 ## Supported models
 We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling.
 
-Encoder: (resnetXX_dilatedYY: customized resnetXX with dilated convolutions, output feature map is 1/YY of input size.)
-- ResNet18: resnet18_dilated16, resnet18_dilated8
-- ResNet50: resnet50_dilated16, resnet50_dilated8
-- ResNet101: resnet101_dilated16, resnet101_dilated8
+Encoder:
+- ResNet18dilated
+- ResNet50dilated
+- ResNet101dilated
 
 ***Coming soon***:
-- ResNeXt101: resnext101_dilated16, resnext101_dilated8
+- ResNeXt101dilated
 
 Decoder:
-- c1_bilinear (1 conv + bilinear upsample)
-- c1_bilinear_deepsup (c1_blinear + deep supervision trick)
-- ppm_bilinear (pyramid pooling + bilinear upsample, see [PSPNet](https://hszhao.github.io/projects/pspnet) paper for details)
-- ppm_bilinear_deepsup (ppm_bilinear + deep supervision trick)
+- c1 (1 conv)
+- c1_deepsup (c1 + deep supervision trick)
+- ppm (pyramid pooling, see [PSPNet](https://hszhao.github.io/projects/pspnet) paper for details)
+- ppm_deepsup (ppm + deep supervision trick)
 - upernet (pyramid pooling + FPN head)
 
 ## Performance:
@@ -64,7 +64,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     <th valign="bottom">Overall Score</th>
     <th valign="bottom">Training Time</th>
     <tr>
-        <td rowspan="2">ResNet18_dilated8 + c1_bilinear_deepsup</td>
+        <td rowspan="2">ResNet18dilated + c1_deepsup</td>
         <td>No</td><td>33.82</td><td>76.05</td><td>54.94</td>
         <td rowspan="2">0.42 * 20 = 8.4 hours</td>
     </tr>
@@ -72,7 +72,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>Yes</td><td>35.34</td><td>77.41</td><td>56.38</td>
     </tr>
     <tr>
-        <td rowspan="2">ResNet18_dilated8 + ppm_bilinear_deepsup</td>
+        <td rowspan="2">ResNet18dilated + ppm_deepsup</td>
         <td>No</td><td>38.00</td><td>78.64</td><td>58.32</td>
         <td rowspan="2">1.1 * 20 = 22.0 hours</td>
     </tr>
@@ -80,7 +80,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>Yes</td><td>38.81</td><td>79.29</td><td>59.05</td>
     </tr>
     <tr>
-        <td rowspan="2">ResNet50_dilated8 + c1_bilinear_deepsup</td>
+        <td rowspan="2">ResNet50dilated + c1_deepsup</td>
         <td>No</td><td>34.88</td><td>76.54</td><td>55.71</td>
         <td rowspan="2">1.38 * 20 = 27.6 hours</td>
     </tr>
@@ -88,7 +88,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>Yes</td><td>35.49</td><td>77.53</td><td>56.66</td>
     </tr>
     <tr>
-        <td rowspan="2">ResNet50_dilated8 + ppm_bilinear_deepsup</td>
+        <td rowspan="2">ResNet50dilated + ppm_deepsup</td>
         <td>No</td><td>41.26</td><td>79.73</td><td>60.50</td>
         <td rowspan="2">1.67 * 20 = 33.4 hours</td>
     </tr>
@@ -96,7 +96,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>Yes</td><td>42.04</td><td>80.23</td><td>61.14</td>
     </tr>
     <tr>
-        <td rowspan="2">ResNet101_dilated8 + ppm_bilinear_deepsup</td>
+        <td rowspan="2">ResNet101dilated + ppm_deepsup</td>
         <td>No</td><td>42.19</td><td>80.59</td><td>61.39</td>
         <td rowspan="2">3.82 * 25 = 95.5 hours</td>
     </tr>
@@ -126,7 +126,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     </tr>
 </tbody></table>
 
-The speed is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GPU memory), ***except for*** ResNet-101_dilated8, which is benchmarked on a server with 8 NVIDIA Tesla P40 GPUS (22GB GPU memory), because of the insufficient memory issue when using dilated conv on a very deep network.
+The speed is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GPU memory), ***except for*** ResNet101dilated, which is benchmarked on a server with 8 NVIDIA Tesla P40 GPUS (22GB GPU memory), because of the insufficient memory issue when using dilated conv on a very deep network.
 
 ## Environment
 The code is developed under the following configurations.
@@ -160,7 +160,7 @@ usage: test.py [-h] --test_img TEST_IMG --model_path MODEL_PATH                 
 chmod +x download_ADE20K.sh
 ./download_ADE20K.sh
 ```
-2. Train a default network (ResNet50_dilated8 + ppm_bilinear_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
+2. Train a default network (ResNet50dilated + ppm_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
 ```bash
 python3 train.py --num_gpus NUM_GPUS
 ```
