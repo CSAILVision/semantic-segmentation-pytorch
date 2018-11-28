@@ -1,5 +1,5 @@
 TEST_IMG=ADE_val_00001519.jpg
-MODEL_PATH=baseline-resnet50_dilated8-ppm_bilinear_deepsup
+MODEL_PATH=baseline-resnet50dilated-ppm_deepsup
 RESULT_PATH=./
 
 ENCODER=$MODEL_PATH/encoder_epoch_20.pth
@@ -21,7 +21,7 @@ fi
 python3 -u test.py \
   --model_path $MODEL_PATH \
   --test_img $TEST_IMG \
-  --arch_encoder resnet50_dilated8 \
-  --arch_decoder ppm_bilinear_deepsup \
+  --arch_encoder resnet50dilated \
+  --arch_decoder ppm_deepsup \
   --fc_dim 2048 \
   --result $RESULT_PATH

@@ -27,7 +27,8 @@ class SegmentationModule(SegmentationModuleBase):
         self.deep_sup_scale = deep_sup_scale
 
     def forward(self, feed_dict, *, segSize=None):
-        if segSize is None: # training
+        # training
+        if segSize is None:
             if self.deep_sup_scale is not None: # use deep supervision technique
                 (pred, pred_deepsup) = self.decoder(self.encoder(feed_dict['img_data'], return_feature_maps=True))
             else:
@@ -40,7 +41,8 @@ class SegmentationModule(SegmentationModuleBase):
 
             acc = self.pixel_acc(pred, feed_dict['seg_label'])
             return loss, acc
-        else: # inference
+        # inference
+        else:
             pred = self.decoder(self.encoder(feed_dict['img_data'], return_feature_maps=True), segSize=segSize)
             return pred
 
@@ -71,55 +73,39 @@ class ModelBuilder():
         #elif classname.find('Linear') != -1:
         #    m.weight.data.normal_(0.0, 0.0001)
 
-    def build_encoder(self, arch='resnet50_dilated8', fc_dim=512, weights=''):
+    def build_encoder(self, arch='resnet50dilated', fc_dim=512, weights=''):
         pretrained = True if len(weights) == 0 else False
+        arch = arch.lower()
         if arch == 'resnet18':
             orig_resnet = resnet.__dict__['resnet18'](pretrained=pretrained)
             net_encoder = Resnet(orig_resnet)
-        elif arch == 'resnet18_dilated8':
+        elif arch == 'resnet18dilated':
             orig_resnet = resnet.__dict__['resnet18'](pretrained=pretrained)
             net_encoder = ResnetDilated(orig_resnet,
                                         dilate_scale=8)
-        elif arch == 'resnet18_dilated16':
-            orig_resnet = resnet.__dict__['resnet18'](pretrained=pretrained)
-            net_encoder = ResnetDilated(orig_resnet,
-                                        dilate_scale=16)
         elif arch == 'resnet34':
             raise NotImplementedError
             orig_resnet = resnet.__dict__['resnet34'](pretrained=pretrained)
             net_encoder = Resnet(orig_resnet)
-        elif arch == 'resnet34_dilated8':
+        elif arch == 'resnet34dilated':
             raise NotImplementedError
             orig_resnet = resnet.__dict__['resnet34'](pretrained=pretrained)
             net_encoder = ResnetDilated(orig_resnet,
                                         dilate_scale=8)
-        elif arch == 'resnet34_dilated16':
-            raise NotImplementedError
-            orig_resnet = resnet.__dict__['resnet34'](pretrained=pretrained)
-            net_encoder = ResnetDilated(orig_resnet,
-                                        dilate_scale=16)
         elif arch == 'resnet50':
             orig_resnet = resnet.__dict__['resnet50'](pretrained=pretrained)
             net_encoder = Resnet(orig_resnet)
-        elif arch == 'resnet50_dilated8':
+        elif arch == 'resnet50dilated':
             orig_resnet = resnet.__dict__['resnet50'](pretrained=pretrained)
             net_encoder = ResnetDilated(orig_resnet,
                                         dilate_scale=8)
-        elif arch == 'resnet50_dilated16':
-            orig_resnet = resnet.__dict__['resnet50'](pretrained=pretrained)
-            net_encoder = ResnetDilated(orig_resnet,
-                                        dilate_scale=16)
         elif arch == 'resnet101':
             orig_resnet = resnet.__dict__['resnet101'](pretrained=pretrained)
             net_encoder = Resnet(orig_resnet)
-        elif arch == 'resnet101_dilated8':
+        elif arch == 'resnet101dilated':
             orig_resnet = resnet.__dict__['resnet101'](pretrained=pretrained)
             net_encoder = ResnetDilated(orig_resnet,
                                         dilate_scale=8)
-        elif arch == 'resnet101_dilated16':
-            orig_resnet = resnet.__dict__['resnet101'](pretrained=pretrained)
-            net_encoder = ResnetDilated(orig_resnet,
-                                        dilate_scale=16)
         elif arch == 'resnext101':
             orig_resnext = resnext.__dict__['resnext101'](pretrained=pretrained)
             net_encoder = Resnet(orig_resnext) # we can still use class Resnet
@@ -133,26 +119,27 @@ class ModelBuilder():
                 torch.load(weights, map_location=lambda storage, loc: storage), strict=False)
         return net_encoder
 
-    def build_decoder(self, arch='ppm_bilinear_deepsup',
+    def build_decoder(self, arch='ppm_deepsup',
                       fc_dim=512, num_class=150,
                       weights='', use_softmax=False):
-        if arch == 'c1_bilinear_deepsup':
-            net_decoder = C1BilinearDeepSup(
+        arch = arch.lower()
+        if arch == 'c1_deepsup':
+            net_decoder = C1DeepSup(
                 num_class=num_class,
                 fc_dim=fc_dim,
                 use_softmax=use_softmax)
-        elif arch == 'c1_bilinear':
-            net_decoder = C1Bilinear(
+        elif arch == 'c1':
+            net_decoder = C1(
                 num_class=num_class,
                 fc_dim=fc_dim,
                 use_softmax=use_softmax)
-        elif arch == 'ppm_bilinear':
-            net_decoder = PPMBilinear(
+        elif arch == 'ppm':
+            net_decoder = PPM(
                 num_class=num_class,
                 fc_dim=fc_dim,
                 use_softmax=use_softmax)
-        elif arch == 'ppm_bilinear_deepsup':
-            net_decoder = PPMBilinearDeepsup(
+        elif arch == 'ppm_deepsup':
+            net_decoder = PPMDeepsup(
                 num_class=num_class,
                 fc_dim=fc_dim,
                 use_softmax=use_softmax)
@@ -286,10 +273,10 @@ class ResnetDilated(nn.Module):
         return [x]
 
 
-# last conv, bilinear upsample
-class C1BilinearDeepSup(nn.Module):
+# last conv, deep supervision
+class C1DeepSup(nn.Module):
     def __init__(self, num_class=150, fc_dim=2048, use_softmax=False):
-        super(C1BilinearDeepSup, self).__init__()
+        super(C1DeepSup, self).__init__()
         self.use_softmax = use_softmax
 
         self.cbr = conv3x3_bn_relu(fc_dim, fc_dim // 4, 1)
@@ -306,7 +293,7 @@ class C1BilinearDeepSup(nn.Module):
         x = self.conv_last(x)
 
         if self.use_softmax:  # is True during inference
-            x = nn.functional.upsample(
+            x = nn.functional.interpolate(
                 x, size=segSize, mode='bilinear', align_corners=False)
             x = nn.functional.softmax(x, dim=1)
             return x
@@ -322,10 +309,10 @@ class C1BilinearDeepSup(nn.Module):
         return (x, _)
 
 
-# last conv, bilinear upsample
-class C1Bilinear(nn.Module):
+# last conv
+class C1(nn.Module):
     def __init__(self, num_class=150, fc_dim=2048, use_softmax=False):
-        super(C1Bilinear, self).__init__()
+        super(C1, self).__init__()
         self.use_softmax = use_softmax
 
         self.cbr = conv3x3_bn_relu(fc_dim, fc_dim // 4, 1)
@@ -339,7 +326,7 @@ class C1Bilinear(nn.Module):
         x = self.conv_last(x)
 
         if self.use_softmax: # is True during inference
-            x = nn.functional.upsample(
+            x = nn.functional.interpolate(
                 x, size=segSize, mode='bilinear', align_corners=False)
             x = nn.functional.softmax(x, dim=1)
         else:
@@ -348,11 +335,11 @@ class C1Bilinear(nn.Module):
         return x
 
 
-# pyramid pooling, bilinear upsample
-class PPMBilinear(nn.Module):
+# pyramid pooling
+class PPM(nn.Module):
     def __init__(self, num_class=150, fc_dim=4096,
                  use_softmax=False, pool_scales=(1, 2, 3, 6)):
-        super(PPMBilinear, self).__init__()
+        super(PPM, self).__init__()
         self.use_softmax = use_softmax
 
         self.ppm = []
@@ -380,7 +367,7 @@ class PPMBilinear(nn.Module):
         input_size = conv5.size()
         ppm_out = [conv5]
         for pool_scale in self.ppm:
-            ppm_out.append(nn.functional.upsample(
+            ppm_out.append(nn.functional.interpolate(
                 pool_scale(conv5),
                 (input_size[2], input_size[3]),
                 mode='bilinear', align_corners=False))
@@ -389,7 +376,7 @@ class PPMBilinear(nn.Module):
         x = self.conv_last(ppm_out)
 
         if self.use_softmax:  # is True during inference
-            x = nn.functional.upsample(
+            x = nn.functional.interpolate(
                 x, size=segSize, mode='bilinear', align_corners=False)
             x = nn.functional.softmax(x, dim=1)
         else:
@@ -397,11 +384,11 @@ class PPMBilinear(nn.Module):
         return x
 
 
-# pyramid pooling, bilinear upsample
-class PPMBilinearDeepsup(nn.Module):
+# pyramid pooling, deep supervision
+class PPMDeepsup(nn.Module):
     def __init__(self, num_class=150, fc_dim=4096,
                  use_softmax=False, pool_scales=(1, 2, 3, 6)):
-        super(PPMBilinearDeepsup, self).__init__()
+        super(PPMDeepsup, self).__init__()
         self.use_softmax = use_softmax
 
         self.ppm = []
@@ -432,7 +419,7 @@ class PPMBilinearDeepsup(nn.Module):
         input_size = conv5.size()
         ppm_out = [conv5]
         for pool_scale in self.ppm:
-            ppm_out.append(nn.functional.upsample(
+            ppm_out.append(nn.functional.interpolate(
                 pool_scale(conv5),
                 (input_size[2], input_size[3]),
                 mode='bilinear', align_corners=False))
@@ -441,7 +428,7 @@ class PPMBilinearDeepsup(nn.Module):
         x = self.conv_last(ppm_out)
 
         if self.use_softmax:  # is True during inference
-            x = nn.functional.upsample(
+            x = nn.functional.interpolate(
                 x, size=segSize, mode='bilinear', align_corners=False)
             x = nn.functional.softmax(x, dim=1)
             return x
@@ -462,7 +449,7 @@ class PPMBilinearDeepsup(nn.Module):
 class UPerNet(nn.Module):
     def __init__(self, num_class=150, fc_dim=4096,
                  use_softmax=False, pool_scales=(1, 2, 3, 6),
-                 fpn_inplanes=(256,512,1024,2048), fpn_dim=256):
+                 fpn_inplanes=(256, 512, 1024, 2048), fpn_dim=256):
         super(UPerNet, self).__init__()
         self.use_softmax = use_softmax
 
@@ -509,7 +496,7 @@ class UPerNet(nn.Module):
         input_size = conv5.size()
         ppm_out = [conv5]
         for pool_scale, pool_conv in zip(self.ppm_pooling, self.ppm_conv):
-            ppm_out.append(pool_conv(nn.functional.upsample(
+            ppm_out.append(pool_conv(nn.functional.interpolate(
                 pool_scale(conv5),
                 (input_size[2], input_size[3]),
                 mode='bilinear', align_corners=False)))
@@ -521,7 +508,7 @@ class UPerNet(nn.Module):
             conv_x = conv_out[i]
             conv_x = self.fpn_in[i](conv_x) # lateral branch
 
-            f = nn.functional.upsample(
+            f = nn.functional.interpolate(
                 f, size=conv_x.size()[2:], mode='bilinear', align_corners=False) # top-down branch
             f = conv_x + f
 
@@ -531,7 +518,7 @@ class UPerNet(nn.Module):
         output_size = fpn_feature_list[0].size()[2:]
         fusion_list = [fpn_feature_list[0]]
         for i in range(1, len(fpn_feature_list)):
-            fusion_list.append(nn.functional.upsample(
+            fusion_list.append(nn.functional.interpolate(
                 fpn_feature_list[i],
                 output_size,
                 mode='bilinear', align_corners=False))
@@ -539,7 +526,7 @@ class UPerNet(nn.Module):
         x = self.conv_last(fusion_out)
 
         if self.use_softmax:  # is True during inference
-            x = nn.functional.upsample(
+            x = nn.functional.interpolate(
                 x, size=segSize, mode='bilinear', align_corners=False)
             x = nn.functional.softmax(x, dim=1)
             return x
