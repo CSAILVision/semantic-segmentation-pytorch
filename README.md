@@ -137,7 +137,16 @@ chmod +x demo_test.sh
 ```
 This script downloads trained models and a test image, runs the test script, and saves predicted segmentation (.png) to the working directory.
 
-2. See full input arguments via python3 test.py -h).
+2. To test on multiple images, you can simply do something as the following (```$PATH_IMG1, $PATH_IMG2, $PATH_IMG3```are your image paths):
+```
+python3 -u test.py \
+  --model_path $MODEL_PATH \
+  --test_imgs $PATH_IMG1 $PATH_IMG2 $PATH_IMG3 \
+  --arch_encoder resnet50dilated \
+  --arch_decoder ppm_deepsup
+```
+
+3. See full input arguments via ```python3 test.py -h```.
 
 ## Training
 1. Download the ADE20K scene parsing dataset:
