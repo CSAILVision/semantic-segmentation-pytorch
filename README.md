@@ -152,8 +152,9 @@ python3 train.py --num_gpus NUM_GPUS
 
 Train a UPerNet101
 ```bash
-python3 train.py --num_gpus NUM_GPUS --arch_encoder resnet101 --arch_decoder upernet 
---segm_downsampling_rate 4 --padding_constant 32
+python3 train.py \
+    --num_gpus NUM_GPUS --arch_encoder resnet101 --arch_decoder upernet \
+    --segm_downsampling_rate 4 --padding_constant 32
 ```
 
 3. See full input arguments via ```python3 train.py -h ```.
@@ -166,8 +167,9 @@ python3 eval.py --id MODEL_ID --suffix SUFFIX
 ```
 Evaluate a UPerNet (e.g, UPerNet50)
 ```bash
-python3 eval.py --id MODEL_ID --suffix SUFFIX 
---arch_encoder resnet50 --arch_decoder upernet --padding_constant 32
+python3 eval.py \
+    --id MODEL_ID --suffix SUFFIX --arch_encoder resnet50 --arch_decoder upernet \
+    --padding_constant 32
 ```
 
 ***We also provide a multi-GPU evaluation script.*** To run the evaluation code on 8 GPUs, simply add ```--device 0-7```. You can also choose which GPUs to use, for example, ```--device 0,2,4,6```.
