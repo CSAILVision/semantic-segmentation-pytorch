@@ -135,7 +135,7 @@ The code is developed under the following configurations.
 chmod +x demo_test.sh
 ./demo_test.sh
 ```
-This script downloads trained models and a test image, runs the test script, and saves predicted segmentation (.png) to the working directory.
+This script downloads trained a model (ResNet50dilated + PPM_deepsup) and a test image, runs the test script, and saves predicted segmentation (.png) to the working directory.
 
 2. To test on multiple images, you can simply do something as the following (```$PATH_IMG1, $PATH_IMG2, $PATH_IMG3```are your image paths):
 ```
@@ -159,7 +159,14 @@ chmod +x download_ADE20K.sh
 python3 train.py --num_gpus NUM_GPUS
 ```
 
-Train a UPerNet101
+* Train ResNet18dilated + PPM_deepsup
+```bash
+python3 train.py \
+    --num_gpus NUM_GPUS arch_encoder resnet18dilated --arch_decoder ppm_deepsup \
+    --fc_dim 512
+```
+
+* Train UPerNet101
 ```bash
 python3 train.py \
     --num_gpus NUM_GPUS --arch_encoder resnet101 --arch_decoder upernet \
@@ -170,14 +177,22 @@ python3 train.py \
 
 
 ## Evaluation
-1. Evaluate a trained network on the validation set. Add ```--visualize``` option to output visualizations as shown in teaser.
+1. Evaluate a trained network on the validation set. ```--id``` is the folder name under ```ckpt``` directory. ```--suffix``` defines which checkpoint to use, for example ```_epoch_20.pth```. Add ```--visualize``` option to output visualizations as shown in teaser.
 ```bash
 python3 eval.py --id MODEL_ID --suffix SUFFIX
 ```
-Evaluate a UPerNet (e.g, UPerNet50)
+
+* Evaluate ResNet18dilated + PPM_deepsup
 ```bash
 python3 eval.py \
-    --id MODEL_ID --suffix SUFFIX --arch_encoder resnet50 --arch_decoder upernet \
+    --id MODEL_ID --suffix SUFFIX arch_encoder resnet18dilated --arch_decoder ppm_deepsup \
+    --fc_dim 512
+```
+
+* Evaluate UPerNet101
+```bash
+python3 eval.py \
+    --id MODEL_ID --suffix SUFFIX --arch_encoder resnet101 --arch_decoder upernet \
     --padding_constant 32
 ```
 
