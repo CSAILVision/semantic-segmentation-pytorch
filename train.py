@@ -81,7 +81,7 @@ def checkpoint(nets, history, args, epoch_num):
 
     # dict_encoder_save = {k: v for k, v in dict_encoder.items() if not (k.endswith('_tmp_running_mean') or k.endswith('tmp_running_var'))}
     # dict_decoder_save = {k: v for k, v in dict_decoder.items() if not (k.endswith('_tmp_running_mean') or k.endswith('tmp_running_var'))}
-    
+
     torch.save(history,
                '{}/history_{}'.format(args.ckpt, suffix_latest))
     torch.save(dict_encoder,
@@ -213,9 +213,9 @@ if __name__ == '__main__':
     # Model related arguments
     parser.add_argument('--id', default='baseline',
                         help="a name for identifying the model")
-    parser.add_argument('--arch_encoder', default='resnet50_dilated8',
+    parser.add_argument('--arch_encoder', default='resnet50dilated',
                         help="architecture of net_encoder")
-    parser.add_argument('--arch_decoder', default='ppm_bilinear_deepsup',
+    parser.add_argument('--arch_decoder', default='ppm_deepsup',
                         help="architecture of net_decoder")
     parser.add_argument('--weights_encoder', default='',
                         help="weights to finetune net_encoder")
@@ -285,13 +285,15 @@ if __name__ == '__main__':
     for key, val in vars(args).items():
         print("{:16} {}".format(key, val))
 
+    args.arch_encoder = args.arch_encoder.lower()
+    args.arch_decoder = args.arch_decoder.lower()
     args.batch_size = args.num_gpus * args.batch_size_per_gpu
     args.max_iters = args.epoch_iters * args.num_epoch
     args.running_lr_encoder = args.lr_encoder
     args.running_lr_decoder = args.lr_decoder
 
-    args.id += '-' + str(args.arch_encoder)
-    args.id += '-' + str(args.arch_decoder)
+    args.id += '-' + args.arch_encoder
+    args.id += '-' + args.arch_decoder
     args.id += '-ngpus' + str(args.num_gpus)
     args.id += '-batchSize' + str(args.batch_size)
     args.id += '-imgMaxSize' + str(args.imgMaxSize)
