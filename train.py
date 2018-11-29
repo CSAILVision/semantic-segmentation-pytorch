@@ -285,13 +285,15 @@ if __name__ == '__main__':
     for key, val in vars(args).items():
         print("{:16} {}".format(key, val))
 
+    args.arch_encoder = args.arch_encoder.lower()
+    args.arch_decoder = args.arch_decoder.lower()
     args.batch_size = args.num_gpus * args.batch_size_per_gpu
     args.max_iters = args.epoch_iters * args.num_epoch
     args.running_lr_encoder = args.lr_encoder
     args.running_lr_decoder = args.lr_decoder
 
-    args.id += '-' + str(args.arch_encoder)
-    args.id += '-' + str(args.arch_decoder)
+    args.id += '-' + args.arch_encoder
+    args.id += '-' + args.arch_decoder
     args.id += '-ngpus' + str(args.num_gpus)
     args.id += '-batchSize' + str(args.batch_size)
     args.id += '-imgMaxSize' + str(args.imgMaxSize)

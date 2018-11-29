@@ -20,7 +20,7 @@ fi
 
 python3 -u test.py \
   --model_path $MODEL_PATH \
-  --test_img $TEST_IMG \
+  --test_imgs $TEST_IMG \
   --arch_encoder resnet50dilated \
   --arch_decoder ppm_deepsup \
   --fc_dim 2048 \

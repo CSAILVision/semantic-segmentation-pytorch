@@ -224,7 +224,11 @@ if __name__ == '__main__':
                         help='gpu_id for evaluation')
 
     args = parser.parse_args()
-    print(args)
+    args.arch_encoder = args.arch_encoder.lower()
+    args.arch_decoder = args.arch_decoder.lower()
+    print("Input arguments:")
+    for key, val in vars(args).items():
+        print("{:16} {}".format(key, val))
 
     # absolute paths of model weights
     args.weights_encoder = os.path.join(args.ckpt, args.id,

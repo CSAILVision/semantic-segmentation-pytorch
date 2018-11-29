@@ -92,11 +92,12 @@ def main(args):
     segmentation_module = SegmentationModule(net_encoder, net_decoder, crit)
 
     # Dataset and Loader
-    list_test = [{'fpath_img': args.test_img}]
-    dataset_val = TestDataset(
+    # list_test = [{'fpath_img': args.test_img}]
+    list_test = [{'fpath_img': x} for x in args.test_imgs]
+    dataset_test = TestDataset(
         list_test, args, max_sample=args.num_val)
-    loader_val = torchdata.DataLoader(
-        dataset_val,
+    loader_test = torchdata.DataLoader(
+        dataset_test,
         batch_size=args.batch_size,
         shuffle=False,
         collate_fn=user_scattered_collate,
@@ -106,7 +107,7 @@ def main(args):
     segmentation_module.cuda()
 
     # Main loop
-    test(segmentation_module, loader_val, args)
+    test(segmentation_module, loader_test, args)
 
     print('Inference done!')
 
@@ -117,7 +118,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     # Path related arguments
-    parser.add_argument('--test_img', required=True)
+    parser.add_argument('--test_imgs', required=True, nargs='+', type=str,
+                        help='a list of image paths that needs to be tested')
     parser.add_argument('--model_path', required=True,
                         help='folder to model path')
     parser.add_argument('--suffix', default='_epoch_20.pth',
@@ -156,7 +158,11 @@ if __name__ == '__main__':
                         help='gpu_id for evaluation')
 
     args = parser.parse_args()
-    print(args)
+    args.arch_encoder = args.arch_encoder.lower()
+    args.arch_decoder = args.arch_decoder.lower()
+    print("Input arguments:")
+    for key, val in vars(args).items():
+        print("{:16} {}".format(key, val))
 
     # absolute paths of model weights
     args.weights_encoder = os.path.join(args.model_path,
