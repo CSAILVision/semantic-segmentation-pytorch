@@ -162,7 +162,7 @@ python3 train.py --num_gpus NUM_GPUS
 * Train ResNet18dilated + PPM_deepsup
 ```bash
 python3 train.py \
-    --num_gpus NUM_GPUS arch_encoder resnet18dilated --arch_decoder ppm_deepsup \
+    --num_gpus NUM_GPUS --arch_encoder resnet18dilated --arch_decoder ppm_deepsup \
     --fc_dim 512
 ```
 
@@ -185,7 +185,7 @@ python3 eval.py --id MODEL_ID --suffix SUFFIX
 * Evaluate ResNet18dilated + PPM_deepsup
 ```bash
 python3 eval.py \
-    --id MODEL_ID --suffix SUFFIX arch_encoder resnet18dilated --arch_decoder ppm_deepsup \
+    --id MODEL_ID --suffix SUFFIX --arch_encoder resnet18dilated --arch_decoder ppm_deepsup \
     --fc_dim 512
 ```
 
