@@ -8,6 +8,7 @@ import sys
 import torch
 import torch.nn as nn
 import math
+from lib.nn import SynchronizedBatchNorm2d
 
 try:
     from urllib import urlretrieve
@@ -26,7 +27,7 @@ model_urls = {
 def conv_bn(inp, oup, stride):
     return nn.Sequential(
         nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
-        nn.BatchNorm2d(oup),
+        SynchronizedBatchNorm2d(oup),
         nn.ReLU6(inplace=True)
     )
 
@@ -34,7 +35,7 @@ def conv_bn(inp, oup, stride):
 def conv_1x1_bn(inp, oup):
     return nn.Sequential(
         nn.Conv2d(inp, oup, 1, 1, 0, bias=False),
-        nn.BatchNorm2d(oup),
+        SynchronizedBatchNorm2d(oup),
         nn.ReLU6(inplace=True)
     )
 
@@ -52,25 +53,25 @@ class InvertedResidual(nn.Module):
             self.conv = nn.Sequential(
                 # dw
                 nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=False),
-                nn.BatchNorm2d(hidden_dim),
+                SynchronizedBatchNorm2d(hidden_dim),
                 nn.ReLU6(inplace=True),
                 # pw-linear
                 nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
-                nn.BatchNorm2d(oup),
+                SynchronizedBatchNorm2d(oup),
             )
         else:
             self.conv = nn.Sequential(
                 # pw
                 nn.Conv2d(inp, hidden_dim, 1, 1, 0, bias=False),
-                nn.BatchNorm2d(hidden_dim),
+                SynchronizedBatchNorm2d(hidden_dim),
                 nn.ReLU6(inplace=True),
                 # dw
                 nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=False),
-                nn.BatchNorm2d(hidden_dim),
+                SynchronizedBatchNorm2d(hidden_dim),
                 nn.ReLU6(inplace=True),
                 # pw-linear
                 nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
-                nn.BatchNorm2d(oup),
+                SynchronizedBatchNorm2d(oup),
             )
 
     def forward(self, x):
@@ -137,7 +138,7 @@ class MobileNetV2(nn.Module):
                 m.weight.data.normal_(0, math.sqrt(2. / n))
                 if m.bias is not None:
                     m.bias.data.zero_()
-            elif isinstance(m, nn.BatchNorm2d):
+            elif isinstance(m, SynchronizedBatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
             elif isinstance(m, nn.Linear):
@@ -167,3 +168,4 @@ def load_url(url, model_dir='./pretrained', map_location=None):
         sys.stderr.write('Downloading: "{}" to {}\n'.format(url, cached_file))
         urlretrieve(url, cached_file)
     return torch.load(cached_file, map_location=map_location)
+
