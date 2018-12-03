@@ -170,11 +170,11 @@ python3 train.py --num_gpus NUM_GPUS
 
 For example:
 
-* Train MobileNetV2dilated + C1
+* Train MobileNetV2dilated + C1_deepsup
 ```bash
 python3 train.py \
-    --num_gpus NUM_GPUS --arch_encoder mobilenetv2dilated --arch_decoder c1 \
-    --fc_dim 1280
+    --num_gpus NUM_GPUS --arch_encoder mobilenetv2dilated --arch_decoder c1_deepsup \
+    --fc_dim 320
 ```
 
 * Train ResNet18dilated + PPM_deepsup
@@ -202,11 +202,11 @@ python3 eval.py --id MODEL_ID --suffix SUFFIX
 
 For example:
 
-* Evaluate MobileNetV2dilated + C1
+* Evaluate MobileNetV2dilated + C1_deepsup
 ```bash
 python3 eval.py \
-    --id MODEL_ID --suffix SUFFIX --arch_encoder mobilenetv2dilated --arch_decoder c1 \
-    --fc_dim 1280
+    --id MODEL_ID --suffix SUFFIX --arch_encoder mobilenetv2dilated --arch_decoder c1_deepsup \
+    --fc_dim 320
 ```
 
 * Evaluate ResNet18dilated + PPM_deepsup

@@ -272,7 +272,7 @@ class MobileNetV2Dilated(nn.Module):
         from functools import partial
 
         # take pretrained mobilenet features
-        self.features = orig_net.features
+        self.features = orig_net.features[:-1]
 
         self.total_idx = len(self.features)
         self.down_idx = [2, 4, 7, 14]

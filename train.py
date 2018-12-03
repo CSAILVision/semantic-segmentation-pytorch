@@ -302,8 +302,8 @@ if __name__ == '__main__':
     args.id += '-LR_encoder' + str(args.lr_encoder)
     args.id += '-LR_decoder' + str(args.lr_decoder)
     args.id += '-epoch' + str(args.num_epoch)
-    args.id += '-decay' + str(args.weight_decay)
-    args.id += '-fixBN' + str(args.fix_bn)
+    if args.fix_bn:
+        args.id += '-fixBN'
     print('Model ID: {}'.format(args.id))
 
     args.ckpt = os.path.join(args.ckpt, args.id)
