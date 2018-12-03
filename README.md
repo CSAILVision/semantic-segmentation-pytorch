@@ -60,6 +60,14 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     <th valign="bottom">Overall Score</th>
     <th valign="bottom">Training Time</th>
     <tr>
+        <td rowspan="2">MobileNetV2dilated + C1_deepsup</td>
+        <td>No</td><td>32.39</td><td>75.75</td><td>54.07</td>
+        <td rowspan="2">0.8 * 20 = 16 hours</td>
+    </tr>
+    <tr>
+        <td>Yes</td><td>33.75</td><td>76.75</td><td>55.25</td>
+    </tr>
+    <tr>
         <td rowspan="2">ResNet18dilated + C1_deepsup</td>
         <td>No</td><td>33.82</td><td>76.05</td><td>54.94</td>
         <td rowspan="2">0.42 * 20 = 8.4 hours</td>
