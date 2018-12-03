@@ -35,6 +35,7 @@ UPerNet is a model based on Feature Pyramid Network (FPN) and Pyramid Pooling Mo
 We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling.
 
 Encoder:
+- MobileNetV2dilated
 - ResNet18dilated
 - ResNet50dilated
 - ResNet101dilated
@@ -43,7 +44,7 @@ Encoder:
 - ResNeXt101dilated
 
 Decoder:
-- C1 (1 conv)
+- C1 (1 convolution module)
 - C1_deepsup (C1 + deep supervision trick)
 - PPM (Pyramid Pooling Module, see [PSPNet](https://hszhao.github.io/projects/pspnet) paper for details.)
 - PPM_deepsup (PPM + deep supervision trick)
