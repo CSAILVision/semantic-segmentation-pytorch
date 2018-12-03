@@ -35,6 +35,7 @@ UPerNet is a model based on Feature Pyramid Network (FPN) and Pyramid Pooling Mo
 We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling.
 
 Encoder:
+- MobileNetV2dilated
 - ResNet18dilated
 - ResNet50dilated
 - ResNet101dilated
@@ -43,7 +44,7 @@ Encoder:
 - ResNeXt101dilated
 
 Decoder:
-- C1 (1 conv)
+- C1 (1 convolution module)
 - C1_deepsup (C1 + deep supervision trick)
 - PPM (Pyramid Pooling Module, see [PSPNet](https://hszhao.github.io/projects/pspnet) paper for details.)
 - PPM_deepsup (PPM + deep supervision trick)
@@ -59,6 +60,14 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     <th valign="bottom">Pixel Accuracy</th>
     <th valign="bottom">Overall Score</th>
     <th valign="bottom">Training Time</th>
+    <tr>
+        <td rowspan="2">MobileNetV2dilated + C1_deepsup</td>
+        <td>No</td><td>32.39</td><td>75.75</td><td>54.07</td>
+        <td rowspan="2">0.8 * 20 = 16 hours</td>
+    </tr>
+    <tr>
+        <td>Yes</td><td>33.75</td><td>76.75</td><td>55.25</td>
+    </tr>
     <tr>
         <td rowspan="2">ResNet18dilated + C1_deepsup</td>
         <td>No</td><td>33.82</td><td>76.05</td><td>54.94</td>
@@ -135,7 +144,7 @@ The code is developed under the following configurations.
 chmod +x demo_test.sh
 ./demo_test.sh
 ```
-This script downloads trained a model (ResNet50dilated + PPM_deepsup) and a test image, runs the test script, and saves predicted segmentation (.png) to the working directory.
+This script downloads a trained model (ResNet50dilated + PPM_deepsup) and a test image, runs the test script, and saves predicted segmentation (.png) to the working directory.
 
 2. To test on multiple images, you can simply do something as the following (```$PATH_IMG1, $PATH_IMG2, $PATH_IMG3```are your image paths):
 ```
@@ -154,15 +163,24 @@ python3 -u test.py \
 chmod +x download_ADE20K.sh
 ./download_ADE20K.sh
 ```
-2. Train a default network (ResNet50dilated + PPM_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
+2. Train a model (default: ResNet50dilated + PPM_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
 ```bash
 python3 train.py --num_gpus NUM_GPUS
+```
+
+For example:
+
+* Train MobileNetV2dilated + C1_deepsup
+```bash
+python3 train.py \
+    --num_gpus NUM_GPUS --arch_encoder mobilenetv2dilated --arch_decoder c1_deepsup \
+    --fc_dim 320
 ```
 
 * Train ResNet18dilated + PPM_deepsup
 ```bash
 python3 train.py \
-    --num_gpus NUM_GPUS arch_encoder resnet18dilated --arch_decoder ppm_deepsup \
+    --num_gpus NUM_GPUS --arch_encoder resnet18dilated --arch_decoder ppm_deepsup \
     --fc_dim 512
 ```
 
@@ -177,15 +195,24 @@ python3 train.py \
 
 
 ## Evaluation
-1. Evaluate a trained network on the validation set. ```--id``` is the folder name under ```ckpt``` directory. ```--suffix``` defines which checkpoint to use, for example ```_epoch_20.pth```. Add ```--visualize``` option to output visualizations as shown in teaser.
+1. Evaluate a trained model on the validation set. ```--id``` is the folder name under ```ckpt``` directory. ```--suffix``` defines which checkpoint to use, for example ```_epoch_20.pth```. Add ```--visualize``` option to output visualizations as shown in teaser.
 ```bash
 python3 eval.py --id MODEL_ID --suffix SUFFIX
+```
+
+For example:
+
+* Evaluate MobileNetV2dilated + C1_deepsup
+```bash
+python3 eval.py \
+    --id MODEL_ID --suffix SUFFIX --arch_encoder mobilenetv2dilated --arch_decoder c1_deepsup \
+    --fc_dim 320
 ```
 
 * Evaluate ResNet18dilated + PPM_deepsup
 ```bash
 python3 eval.py \
-    --id MODEL_ID --suffix SUFFIX arch_encoder resnet18dilated --arch_decoder ppm_deepsup \
+    --id MODEL_ID --suffix SUFFIX --arch_encoder resnet18dilated --arch_decoder ppm_deepsup \
     --fc_dim 512
 ```
 

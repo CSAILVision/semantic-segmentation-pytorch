@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision
-from . import resnet, resnext
+from . import resnet, resnext, mobilenet
 from lib.nn import SynchronizedBatchNorm2d
 
 
@@ -76,13 +76,15 @@ class ModelBuilder():
     def build_encoder(self, arch='resnet50dilated', fc_dim=512, weights=''):
         pretrained = True if len(weights) == 0 else False
         arch = arch.lower()
-        if arch == 'resnet18':
+        if arch == 'mobilenetv2dilated':
+            orig_mobilenet = mobilenet.__dict__['mobilenetv2'](pretrained=pretrained)
+            net_encoder = MobileNetV2Dilated(orig_mobilenet, dilate_scale=8)
+        elif arch == 'resnet18':
             orig_resnet = resnet.__dict__['resnet18'](pretrained=pretrained)
             net_encoder = Resnet(orig_resnet)
         elif arch == 'resnet18dilated':
             orig_resnet = resnet.__dict__['resnet18'](pretrained=pretrained)
-            net_encoder = ResnetDilated(orig_resnet,
-                                        dilate_scale=8)
+            net_encoder = ResnetDilated(orig_resnet, dilate_scale=8)
         elif arch == 'resnet34':
             raise NotImplementedError
             orig_resnet = resnet.__dict__['resnet34'](pretrained=pretrained)
@@ -90,22 +92,19 @@ class ModelBuilder():
         elif arch == 'resnet34dilated':
             raise NotImplementedError
             orig_resnet = resnet.__dict__['resnet34'](pretrained=pretrained)
-            net_encoder = ResnetDilated(orig_resnet,
-                                        dilate_scale=8)
+            net_encoder = ResnetDilated(orig_resnet, dilate_scale=8)
         elif arch == 'resnet50':
             orig_resnet = resnet.__dict__['resnet50'](pretrained=pretrained)
             net_encoder = Resnet(orig_resnet)
         elif arch == 'resnet50dilated':
             orig_resnet = resnet.__dict__['resnet50'](pretrained=pretrained)
-            net_encoder = ResnetDilated(orig_resnet,
-                                        dilate_scale=8)
+            net_encoder = ResnetDilated(orig_resnet, dilate_scale=8)
         elif arch == 'resnet101':
             orig_resnet = resnet.__dict__['resnet101'](pretrained=pretrained)
             net_encoder = Resnet(orig_resnet)
         elif arch == 'resnet101dilated':
             orig_resnet = resnet.__dict__['resnet101'](pretrained=pretrained)
-            net_encoder = ResnetDilated(orig_resnet,
-                                        dilate_scale=8)
+            net_encoder = ResnetDilated(orig_resnet, dilate_scale=8)
         elif arch == 'resnext101':
             orig_resnext = resnext.__dict__['resnext101'](pretrained=pretrained)
             net_encoder = Resnet(orig_resnext) # we can still use class Resnet
@@ -265,6 +264,61 @@ class ResnetDilated(nn.Module):
         if return_feature_maps:
             return conv_out
         return [x]
+
+
+class MobileNetV2Dilated(nn.Module):
+    def __init__(self, orig_net, dilate_scale=8):
+        super(MobileNetV2Dilated, self).__init__()
+        from functools import partial
+
+        # take pretrained mobilenet features
+        self.features = orig_net.features[:-1]
+
+        self.total_idx = len(self.features)
+        self.down_idx = [2, 4, 7, 14]
+
+        if dilate_scale == 8:
+            for i in range(self.down_idx[-2], self.down_idx[-1]):
+                self.features[i].apply(
+                    partial(self._nostride_dilate, dilate=2)
+                )
+            for i in range(self.down_idx[-1], self.total_idx):
+                self.features[i].apply(
+                    partial(self._nostride_dilate, dilate=4)
+                )
+        elif dilate_scale == 16:
+            for i in range(self.down_idx[-1], self.total_idx):
+                self.features[i].apply(
+                    partial(self._nostride_dilate, dilate=2)
+                )
+
+    def _nostride_dilate(self, m, dilate):
+        classname = m.__class__.__name__
+        if classname.find('Conv') != -1:
+            # the convolution with stride
+            if m.stride == (2, 2):
+                m.stride = (1, 1)
+                if m.kernel_size == (3, 3):
+                    m.dilation = (dilate//2, dilate//2)
+                    m.padding = (dilate//2, dilate//2)
+            # other convoluions
+            else:
+                if m.kernel_size == (3, 3):
+                    m.dilation = (dilate, dilate)
+                    m.padding = (dilate, dilate)
+
+    def forward(self, x, return_feature_maps=False):
+        if return_feature_maps:
+            conv_out = []
+            for i in range(self.total_idx):
+                x = self.features[i](x)
+                if i in self.down_idx:
+                    conv_out.append(x)
+            conv_out.append(x)
+            return conv_out
+
+        else:
+            return [self.features(x)]
 
 
 # last conv, deep supervision
