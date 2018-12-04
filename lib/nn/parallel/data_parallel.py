@@ -3,16 +3,15 @@
 import torch.cuda as cuda
 import torch.nn as nn
 import torch
-from torch.autograd import Variable
 import collections
 from torch.nn.parallel._functions import Gather
 
+
 __all__ = ['UserScatteredDataParallel', 'user_scattered_collate', 'async_copy_to']
+
 
 def async_copy_to(obj, dev, main_stream=None):
     if torch.is_tensor(obj):
-        obj = Variable(obj)
-    if isinstance(obj, Variable):
         v = obj.cuda(dev, non_blocking=True)
         if main_stream is not None:
             v.data.record_stream(main_stream)
@@ -32,7 +31,7 @@ def dict_gather(outputs, target_device, dim=0):
     """
     def gather_map(outputs):
         out = outputs[0]
-        if isinstance(out, Variable):
+        if torch.is_tensor(out):
             # MJY(20180330) HACK:: force nr_dims > 0
             if out.dim() == 0:
                 outputs = [o.unsqueeze(0) for o in outputs]

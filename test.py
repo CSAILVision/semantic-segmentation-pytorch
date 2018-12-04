@@ -16,14 +16,16 @@ from lib.nn import user_scattered_collate, async_copy_to
 from lib.utils import as_numpy, mark_volatile
 import lib.utils.data as torchdata
 import cv2
+from tqdm import tqdm
+
+colors = loadmat('data/color150.mat')['colors']
 
 
-def visualize_result(data, preds, args):
-    colors = loadmat('data/color150.mat')['colors']
+def visualize_result(data, pred, args):
     (img, info) = data
 
     # prediction
-    pred_color = colorEncode(preds, colors)
+    pred_color = colorEncode(pred, colors)
 
     # aggregate images and save
     im_vis = np.concatenate((img, pred_color),
@@ -37,16 +39,17 @@ def visualize_result(data, preds, args):
 def test(segmentation_module, loader, args):
     segmentation_module.eval()
 
-    for i, batch_data in enumerate(loader):
+    pbar = tqdm(total=len(loader))
+    for batch_data in loader:
         # process data
         batch_data = batch_data[0]
         segSize = (batch_data['img_ori'].shape[0],
                    batch_data['img_ori'].shape[1])
-
         img_resized_list = batch_data['img_data']
 
         with torch.no_grad():
-            pred = torch.zeros(1, args.num_class, segSize[0], segSize[1])
+            scores = torch.zeros(1, args.num_class, segSize[0], segSize[1])
+            scores = async_copy_to(scores, args.gpu_id)
 
             for img in img_resized_list:
                 feed_dict = batch_data.copy()
@@ -57,18 +60,17 @@ def test(segmentation_module, loader, args):
 
                 # forward pass
                 pred_tmp = segmentation_module(feed_dict, segSize=segSize)
-                pred = pred + pred_tmp.cpu() / len(args.imgSize)
+                scores = scores + pred_tmp / len(args.imgSize)
 
-            _, preds = torch.max(pred, dim=1)
-            preds = as_numpy(preds.squeeze(0))
+            _, pred = torch.max(scores, dim=1)
+            pred = as_numpy(pred.squeeze(0).cpu())
 
         # visualization
         visualize_result(
             (batch_data['img_ori'], batch_data['info']),
-            preds, args)
+            pred, args)
 
-        print('[{}] iter {}'
-              .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), i))
+        pbar.update(1)
 
 
 def main(args):

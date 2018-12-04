@@ -1,6 +1,5 @@
 # System libs
 import os
-import datetime
 import argparse
 from distutils.version import LooseVersion
 from multiprocessing import Queue, Process
@@ -23,14 +22,14 @@ from tqdm import tqdm
 colors = loadmat('data/color150.mat')['colors']
 
 
-def visualize_result(data, preds, args):
+def visualize_result(data, pred, args):
     (img, seg, info) = data
 
     # segmentation
     seg_color = colorEncode(seg, colors)
 
     # prediction
-    pred_color = colorEncode(preds, colors)
+    pred_color = colorEncode(pred, colors)
 
     # aggregate images and save
     im_vis = np.concatenate((img, seg_color, pred_color),
@@ -42,19 +41,18 @@ def visualize_result(data, preds, args):
 
 
 def evaluate(segmentation_module, loader, args, dev_id, result_queue):
-
     segmentation_module.eval()
 
-    for i, batch_data in enumerate(loader):
+    for batch_data in loader:
         # process data
         batch_data = batch_data[0]
         seg_label = as_numpy(batch_data['seg_label'][0])
-
         img_resized_list = batch_data['img_data']
 
         with torch.no_grad():
             segSize = (seg_label.shape[0], seg_label.shape[1])
-            pred = torch.zeros(1, args.num_class, segSize[0], segSize[1])
+            scores = torch.zeros(1, args.num_class, segSize[0], segSize[1])
+            scores = async_copy_to(scores, dev_id)
 
             for img in img_resized_list:
                 feed_dict = batch_data.copy()
@@ -64,22 +62,22 @@ def evaluate(segmentation_module, loader, args, dev_id, result_queue):
                 feed_dict = async_copy_to(feed_dict, dev_id)
 
                 # forward pass
-                pred_tmp = segmentation_module(feed_dict, segSize=segSize)
-                pred = pred + pred_tmp.cpu() / len(args.imgSize)
+                scores_tmp = segmentation_module(feed_dict, segSize=segSize)
+                scores = scores + scores_tmp / len(args.imgSize)
 
-            _, preds = torch.max(pred.data.cpu(), dim=1)
-            preds = as_numpy(preds.squeeze(0))
+            _, pred = torch.max(scores, dim=1)
+            pred = as_numpy(pred.squeeze(0).cpu())
 
         # calculate accuracy and SEND THEM TO MASTER
-        acc, pix = accuracy(preds, seg_label)
-        intersection, union = intersectionAndUnion(preds, seg_label, args.num_class)
+        acc, pix = accuracy(pred, seg_label)
+        intersection, union = intersectionAndUnion(pred, seg_label, args.num_class)
         result_queue.put_nowait((acc, pix, intersection, union))
 
         # visualization
         if args.visualize:
             visualize_result(
                 (batch_data['img_ori'], seg_label, batch_data['info']),
-                preds, args)
+                pred, args)
 
 
 def worker(args, dev_id, start_idx, end_idx, result_queue):
@@ -118,6 +116,7 @@ def worker(args, dev_id, start_idx, end_idx, result_queue):
     # Main loop
     evaluate(segmentation_module, loader_val, args, dev_id, result_queue)
 
+
 def main(args):
     # Parse device ids
     default_dev, *parallel_dev = parse_devices(args.devices)
@@ -145,7 +144,7 @@ def main(args):
         start_idx = dev_id * nr_files_per_dev
         end_idx = min(start_idx + nr_files_per_dev, nr_files)
         proc = Process(target=worker, args=(args, dev_id, start_idx, end_idx, result_queue))
-        print('process:%d, start_idx:%d, end_idx:%d' % (dev_id, start_idx, end_idx))
+        print('process:{}, start_idx:{}, end_idx:{}'.format(dev_id, start_idx, end_idx))
         proc.start()
         procs.append(proc)
 
@@ -164,6 +163,7 @@ def main(args):
     for p in procs:
         p.join()
 
+    # summary
     iou = intersection_meter.sum / (union_meter.sum + 1e-10)
     for i, _iou in enumerate(iou):
         print('class [{}], IoU: {}'.format(i, _iou))
