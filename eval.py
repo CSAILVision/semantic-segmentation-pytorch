@@ -1,6 +1,6 @@
 # System libs
 import os
-import datetime
+import time
 import argparse
 from distutils.version import LooseVersion
 # Numerical libs
@@ -16,18 +16,19 @@ from lib.nn import user_scattered_collate, async_copy_to
 from lib.utils import as_numpy, mark_volatile
 import lib.utils.data as torchdata
 import cv2
+from tqdm import tqdm
 
 colors = loadmat('data/color150.mat')['colors']
 
 
-def visualize_result(data, preds, args):
+def visualize_result(data, pred, args):
     (img, seg, info) = data
 
     # segmentation
     seg_color = colorEncode(seg, colors)
 
     # prediction
-    pred_color = colorEncode(preds, colors)
+    pred_color = colorEncode(pred, colors)
 
     # aggregate images and save
     im_vis = np.concatenate((img, seg_color, pred_color),
@@ -42,19 +43,22 @@ def evaluate(segmentation_module, loader, args):
     acc_meter = AverageMeter()
     intersection_meter = AverageMeter()
     union_meter = AverageMeter()
+    time_meter = AverageMeter()
 
     segmentation_module.eval()
 
-    for i, batch_data in enumerate(loader):
+    pbar = tqdm(total=len(loader))
+    for batch_data in loader:
         # process data
         batch_data = batch_data[0]
         seg_label = as_numpy(batch_data['seg_label'][0])
-
         img_resized_list = batch_data['img_data']
 
+        tic = time.time()
         with torch.no_grad():
             segSize = (seg_label.shape[0], seg_label.shape[1])
-            pred = torch.zeros(1, args.num_class, segSize[0], segSize[1])
+            scores = torch.zeros(1, args.num_class, segSize[0], segSize[1])
+            scores = async_copy_to(scores, args.gpu_id)
 
             for img in img_resized_list:
                 feed_dict = batch_data.copy()
@@ -64,35 +68,37 @@ def evaluate(segmentation_module, loader, args):
                 feed_dict = async_copy_to(feed_dict, args.gpu_id)
 
                 # forward pass
-                pred_tmp = segmentation_module(feed_dict, segSize=segSize)
-                pred = pred + pred_tmp.cpu() / len(args.imgSize)
+                scores_tmp = segmentation_module(feed_dict, segSize=segSize)
+                scores = scores + scores_tmp / len(args.imgSize)
 
-            _, preds = torch.max(pred.data.cpu(), dim=1)
-            preds = as_numpy(preds.squeeze(0))
+            _, pred = torch.max(scores, dim=1)
+            pred = as_numpy(pred.squeeze(0).cpu())
+
+        time_meter.update(time.time() - tic)
 
         # calculate accuracy
-        acc, pix = accuracy(preds, seg_label)
-        intersection, union = intersectionAndUnion(preds, seg_label, args.num_class)
+        acc, pix = accuracy(pred, seg_label)
+        intersection, union = intersectionAndUnion(pred, seg_label, args.num_class)
         acc_meter.update(acc, pix)
         intersection_meter.update(intersection)
         union_meter.update(union)
-        print('[{}] iter {}, accuracy: {}'
-              .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                      i, acc))
 
         # visualization
         if args.visualize:
             visualize_result(
                 (batch_data['img_ori'], seg_label, batch_data['info']),
-                preds, args)
+                pred, args)
 
+        pbar.update(1)
+
+    # summary
     iou = intersection_meter.sum / (union_meter.sum + 1e-10)
     for i, _iou in enumerate(iou):
         print('class [{}], IoU: {}'.format(i, _iou))
 
     print('[Eval Summary]:')
-    print('Mean IoU: {:.4}, Accuracy: {:.2f}%'
-          .format(iou.mean(), acc_meter.average()*100))
+    print('Mean IoU: {:.4}, Accuracy: {:.2f}%, Inference Time: {:.4}s'
+          .format(iou.mean(), acc_meter.average()*100, time_meter.average()))
 
 
 def main(args):
