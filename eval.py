@@ -54,7 +54,8 @@ def evaluate(segmentation_module, loader, args):
         seg_label = as_numpy(batch_data['seg_label'][0])
         img_resized_list = batch_data['img_data']
 
-        tic = time.time()
+        torch.cuda.synchronize()
+        tic = time.perf_counter()
         with torch.no_grad():
             segSize = (seg_label.shape[0], seg_label.shape[1])
             scores = torch.zeros(1, args.num_class, segSize[0], segSize[1])
@@ -74,7 +75,8 @@ def evaluate(segmentation_module, loader, args):
             _, pred = torch.max(scores, dim=1)
             pred = as_numpy(pred.squeeze(0).cpu())
 
-        time_meter.update(time.time() - tic)
+        torch.cuda.synchronize()
+        time_meter.update(time.perf_counter() - tic)
 
         # calculate accuracy
         acc, pix = accuracy(pred, seg_label)
@@ -94,10 +96,10 @@ def evaluate(segmentation_module, loader, args):
     # summary
     iou = intersection_meter.sum / (union_meter.sum + 1e-10)
     for i, _iou in enumerate(iou):
-        print('class [{}], IoU: {}'.format(i, _iou))
+        print('class [{}], IoU: {:.4f}'.format(i, _iou))
 
     print('[Eval Summary]:')
-    print('Mean IoU: {:.4}, Accuracy: {:.2f}%, Inference Time: {:.4}s'
+    print('Mean IoU: {:.4f}, Accuracy: {:.2f}%, Inference Time: {:.4f}s'
           .format(iou.mean(), acc_meter.average()*100, time_meter.average()))
 
 

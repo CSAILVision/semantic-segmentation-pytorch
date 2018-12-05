@@ -166,10 +166,10 @@ def main(args):
     # summary
     iou = intersection_meter.sum / (union_meter.sum + 1e-10)
     for i, _iou in enumerate(iou):
-        print('class [{}], IoU: {}'.format(i, _iou))
+        print('class [{}], IoU: {:.4f}'.format(i, _iou))
 
     print('[Eval Summary]:')
-    print('Mean IoU: {:.4}, Accuracy: {:.2f}%'
+    print('Mean IoU: {:.4f}, Accuracy: {:.2f}%'
           .format(iou.mean(), acc_meter.average()*100))
 
     print('Evaluation Done!')

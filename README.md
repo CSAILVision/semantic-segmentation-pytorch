@@ -55,83 +55,91 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
 
 <table><tbody>
     <th valign="bottom">Architecture</th>
-    <th valign="bottom">MS Test</th>
+    <th valign="bottom">MultiScale Testing</th>
     <th valign="bottom">Mean IoU</th>
-    <th valign="bottom">Pixel Accuracy</th>
+    <th valign="bottom">Pixel Accuracy(%)</th>
     <th valign="bottom">Overall Score</th>
-    <th valign="bottom">Training Time</th>
+    <th valign="bottom">Inference Speed(fps)</th>
+    <th valign="bottom">Training Time(hours)</th>
     <tr>
         <td rowspan="2">MobileNetV2dilated + C1_deepsup</td>
         <td>No</td><td>32.39</td><td>75.75</td><td>54.07</td>
-        <td rowspan="2">0.8 * 20 = 16 hours</td>
+        <td>17.2</td>
+        <td rowspan="2">0.8 * 20 = 16</td>
     </tr>
     <tr>
         <td>Yes</td><td>33.75</td><td>76.75</td><td>55.25</td>
+        <td>10.3</td>
     </tr>
     <tr>
         <td rowspan="2">ResNet18dilated + C1_deepsup</td>
         <td>No</td><td>33.82</td><td>76.05</td><td>54.94</td>
-        <td rowspan="2">0.42 * 20 = 8.4 hours</td>
+        <td>13.9</td>
+        <td rowspan="2">0.42 * 20 = 8.4</td>
     </tr>
     <tr>
         <td>Yes</td><td>35.34</td><td>77.41</td><td>56.38</td>
+        <td>5.8</td>
     </tr>
     <tr>
         <td rowspan="2">ResNet18dilated + PPM_deepsup</td>
         <td>No</td><td>38.00</td><td>78.64</td><td>58.32</td>
-        <td rowspan="2">1.1 * 20 = 22.0 hours</td>
+        <td>11.7</td>
+        <td rowspan="2">1.1 * 20 = 22.0</td>
     </tr>
     <tr>
         <td>Yes</td><td>38.81</td><td>79.29</td><td>59.05</td>
-    </tr>
-    <tr>
-        <td rowspan="2">ResNet50dilated + C1_deepsup</td>
-        <td>No</td><td>34.88</td><td>76.54</td><td>55.71</td>
-        <td rowspan="2">1.38 * 20 = 27.6 hours</td>
-    </tr>
-    <tr>
-        <td>Yes</td><td>35.49</td><td>77.53</td><td>56.66</td>
+        <td>4.2</td>
     </tr>
     <tr>
         <td rowspan="2">ResNet50dilated + PPM_deepsup</td>
         <td>No</td><td>41.26</td><td>79.73</td><td>60.50</td>
-        <td rowspan="2">1.67 * 20 = 33.4 hours</td>
+        <td>8.3</td>
+        <td rowspan="2">1.67 * 20 = 33.4</td>
     </tr>
     <tr>
         <td>Yes</td><td>42.04</td><td>80.23</td><td>61.14</td>
+        <td>2.6</td>
     </tr>
     <tr>
         <td rowspan="2">ResNet101dilated + PPM_deepsup</td>
         <td>No</td><td>42.19</td><td>80.59</td><td>61.39</td>
-        <td rowspan="2">3.82 * 25 = 95.5 hours</td>
+        <td>6.8</td>
+        <td rowspan="2">3.82 * 25 = 95.5</td>
     </tr>
     <tr>
         <td>Yes</td><td>42.53</td><td>80.91</td><td>61.72</td>
+        <td>2.0</td>
     </tr>
     <tr>
         <td rowspan="2"><b>UperNet50</b></td>
         <td>No</td><td>40.44</td><td>79.80</td><td>60.12</td>
-        <td rowspan="2">1.75 * 20 = 35.0 hours</td>
+        <td>-</td>
+        <td rowspan="2">1.75 * 20 = 35.0</td>
     </tr>
     <tr>
         <td>Yes</td><td>41.55</td><td>80.23</td><td>60.89</td>
+        <td>-</td>
     </tr>
     <tr>
         <td rowspan="2"><b>UperNet101</b></td>
         <td>No</td><td>41.98</td><td>80.63</td><td>61.34</td>
-        <td rowspan="2">2.5 * 25 = 62.5 hours</td>
+        <td>-</td>
+        <td rowspan="2">2.5 * 25 = 62.5</td>
     </tr>
     <tr>
         <td>Yes</td><td>42.66</td><td>81.01</td><td>61.84</td>
+        <td>-</td>
     </tr>
     <tr>
         <td>UPerNet-ResNext101 (coming soon!)</td>
         <td>-</td><td>-</td><td>-</td><td>-</td>
-        <td>- hours</td>
+        <td>-</td>
+        <td>-</td>
     </tr>
 </tbody></table>
 
-The speed is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GPU memory), ***except for*** ResNet101dilated, which is benchmarked on a server with 8 NVIDIA Tesla P40 GPUS (22GB GPU memory), because of the insufficient memory issue when using dilated conv on a very deep network.
+The training is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GPU memory), ***except for*** ResNet101dilated, which is benchmarked on a server with 8 NVIDIA Tesla P40 GPUS (22GB GPU memory), because of the insufficient memory issue when using dilated conv on a very deep network. The inference speed is benchmarked a single NVIDIA Pascal Titan Xp GPU, without visualization.
 
 ## Environment
 The code is developed under the following configurations.
