@@ -72,6 +72,16 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>10.3</td>
     </tr>
     <tr>
+        <td rowspan="2">MobileNetV2dilated + PPM_deepsup</td>
+        <td>No</td><td>35.76</td><td>77.77</td><td>56.27</td>
+        <td>14.9</td>
+        <td rowspan="2">0.9 * 20 = 18.0</td>
+    </tr>
+    <tr>
+        <td>Yes</td><td>36.28</td><td>78.26</td><td>57.27</td>
+        <td>6.7</td>
+    </tr>
+    <tr>
         <td rowspan="2">ResNet18dilated + C1_deepsup</td>
         <td>No</td><td>33.82</td><td>76.05</td><td>54.94</td>
         <td>13.9</td>
