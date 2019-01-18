@@ -11,7 +11,7 @@ import torch.nn as nn
 # Our libs
 from dataset import TrainDataset
 from models import ModelBuilder, SegmentationModule
-from utils import AverageMeter
+from utils import AverageMeter, parse_devices
 from lib.nn import UserScatteredDataParallel, user_scattered_collate, patch_replication_callback
 import lib.utils.data as torchdata
 
@@ -168,7 +168,7 @@ def main(args):
 
     loader_train = torchdata.DataLoader(
         dataset_train,
-        batch_size=args.num_gpus,  # we have modified data_parallel
+        batch_size=len(args.gpus),  # we have modified data_parallel
         shuffle=False,  # we do not use this param
         collate_fn=user_scattered_collate,
         num_workers=int(args.workers),
@@ -181,10 +181,10 @@ def main(args):
     iterator_train = iter(loader_train)
 
     # load nets into gpu
-    if args.num_gpus > 1:
+    if len(args.gpus) > 1:
         segmentation_module = UserScatteredDataParallel(
             segmentation_module,
-            device_ids=range(args.num_gpus))
+            device_ids=args.gpus)
         # For sync bn
         patch_replication_callback(segmentation_module)
     segmentation_module.cuda()
@@ -233,8 +233,8 @@ if __name__ == '__main__':
                         default='./data/')
 
     # optimization related arguments
-    parser.add_argument('--num_gpus', default=8, type=int,
-                        help='number of gpus to use')
+    parser.add_argument('--gpus', default='0-3',
+                        help='gpus to use, e.g. 0-3 or 0,1,2,3')
     parser.add_argument('--batch_size_per_gpu', default=2, type=int,
                         help='input batch size')
     parser.add_argument('--num_epoch', default=20, type=int,
@@ -254,7 +254,7 @@ if __name__ == '__main__':
                         help='weights regularizer')
     parser.add_argument('--deep_sup_scale', default=0.4, type=float,
                         help='the weight of deep supervision loss')
-    parser.add_argument('--fix_bn', default=0, type=int,
+    parser.add_argument('--fix_bn', action='store_true',
                         help='fix bn params')
 
     # Data related arguments
@@ -262,7 +262,8 @@ if __name__ == '__main__':
                         help='number of classes')
     parser.add_argument('--workers', default=16, type=int,
                         help='number of data loading workers')
-    parser.add_argument('--imgSize', default=[300,375,450,525,600], nargs='+', type=int,
+    parser.add_argument('--imgSize', default=[300, 375, 450, 525, 600],
+                        nargs='+', type=int,
                         help='input image size of short edge (int or list)')
     parser.add_argument('--imgMaxSize', default=1000, type=int,
                         help='maximum input image size of long edge')
@@ -285,16 +286,24 @@ if __name__ == '__main__':
     for key, val in vars(args).items():
         print("{:16} {}".format(key, val))
 
-    args.arch_encoder = args.arch_encoder.lower()
-    args.arch_decoder = args.arch_decoder.lower()
-    args.batch_size = args.num_gpus * args.batch_size_per_gpu
+    # Parse gpu ids
+    all_gpus = parse_devices(args.gpus)
+    all_gpus = [x.replace('gpu', '') for x in all_gpus]
+    args.gpus = [int(x) for x in all_gpus]
+    num_gpus = len(args.gpus)
+    args.batch_size = num_gpus * args.batch_size_per_gpu
+
     args.max_iters = args.epoch_iters * args.num_epoch
     args.running_lr_encoder = args.lr_encoder
     args.running_lr_decoder = args.lr_decoder
 
+    args.arch_encoder = args.arch_encoder.lower()
+    args.arch_decoder = args.arch_decoder.lower()
+
+    # Model ID
     args.id += '-' + args.arch_encoder
     args.id += '-' + args.arch_decoder
-    args.id += '-ngpus' + str(args.num_gpus)
+    args.id += '-ngpus' + str(num_gpus)
     args.id += '-batchSize' + str(args.batch_size)
     args.id += '-imgMaxSize' + str(args.imgMaxSize)
     args.id += '-paddingConst' + str(args.padding_constant)
