@@ -2,6 +2,7 @@ import numpy as np
 import re
 import functools
 
+
 class AverageMeter(object):
     """Computes and stores the average and current value"""
     def __init__(self):
@@ -150,7 +151,7 @@ REGEX = [
 
 
 def parse_devices(input_devices):
-    
+
     """Parse user's devices input str to standard format.
     e.g. [gpu0, gpu1, ...]
 
@@ -168,5 +169,5 @@ def parse_devices(input_devices):
                 break
         else:
             raise NotSupportedCliException(
-                    'Can not recognize device: "%s"' % d)
+                'Can not recognize device: "{}"'.format(d))
     return ret

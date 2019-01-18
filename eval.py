@@ -13,7 +13,7 @@ from dataset import ValDataset
 from models import ModelBuilder, SegmentationModule
 from utils import AverageMeter, colorEncode, accuracy, intersectionAndUnion
 from lib.nn import user_scattered_collate, async_copy_to
-from lib.utils import as_numpy, mark_volatile
+from lib.utils import as_numpy
 import lib.utils.data as torchdata
 import cv2
 from tqdm import tqdm
@@ -59,14 +59,14 @@ def evaluate(segmentation_module, loader, args):
         with torch.no_grad():
             segSize = (seg_label.shape[0], seg_label.shape[1])
             scores = torch.zeros(1, args.num_class, segSize[0], segSize[1])
-            scores = async_copy_to(scores, args.gpu_id)
+            scores = async_copy_to(scores, args.gpu)
 
             for img in img_resized_list:
                 feed_dict = batch_data.copy()
                 feed_dict['img_data'] = img
                 del feed_dict['img_ori']
                 del feed_dict['info']
-                feed_dict = async_copy_to(feed_dict, args.gpu_id)
+                feed_dict = async_copy_to(feed_dict, args.gpu)
 
                 # forward pass
                 scores_tmp = segmentation_module(feed_dict, segSize=segSize)
@@ -104,7 +104,7 @@ def evaluate(segmentation_module, loader, args):
 
 
 def main(args):
-    torch.cuda.set_device(args.gpu_id)
+    torch.cuda.set_device(args.gpu)
 
     # Network Builders
     builder = ModelBuilder()
@@ -187,8 +187,8 @@ if __name__ == '__main__':
                         help='output visualization?')
     parser.add_argument('--result', default='./result',
                         help='folder to output visualization results')
-    parser.add_argument('--gpu_id', default=0, type=int,
-                        help='gpu_id for evaluation')
+    parser.add_argument('--gpu', default=0, type=int,
+                        help='gpu id for evaluation')
 
     args = parser.parse_args()
     args.arch_encoder = args.arch_encoder.lower()

@@ -1,6 +1,5 @@
 # System libs
 import os
-import datetime
 import argparse
 from distutils.version import LooseVersion
 # Numerical libs
@@ -13,7 +12,7 @@ from dataset import TestDataset
 from models import ModelBuilder, SegmentationModule
 from utils import colorEncode
 from lib.nn import user_scattered_collate, async_copy_to
-from lib.utils import as_numpy, mark_volatile
+from lib.utils import as_numpy
 import lib.utils.data as torchdata
 import cv2
 from tqdm import tqdm
@@ -49,14 +48,14 @@ def test(segmentation_module, loader, args):
 
         with torch.no_grad():
             scores = torch.zeros(1, args.num_class, segSize[0], segSize[1])
-            scores = async_copy_to(scores, args.gpu_id)
+            scores = async_copy_to(scores, args.gpu)
 
             for img in img_resized_list:
                 feed_dict = batch_data.copy()
                 feed_dict['img_data'] = img
                 del feed_dict['img_ori']
                 del feed_dict['info']
-                feed_dict = async_copy_to(feed_dict, args.gpu_id)
+                feed_dict = async_copy_to(feed_dict, args.gpu)
 
                 # forward pass
                 pred_tmp = segmentation_module(feed_dict, segSize=segSize)
@@ -74,7 +73,7 @@ def test(segmentation_module, loader, args):
 
 
 def main(args):
-    torch.cuda.set_device(args.gpu_id)
+    torch.cuda.set_device(args.gpu)
 
     # Network Builders
     builder = ModelBuilder()
@@ -156,8 +155,8 @@ if __name__ == '__main__':
     # Misc arguments
     parser.add_argument('--result', default='.',
                         help='folder to output visualization results')
-    parser.add_argument('--gpu_id', default=0, type=int,
-                        help='gpu_id for evaluation')
+    parser.add_argument('--gpu', default=0, type=int,
+                        help='gpu id for evaluation')
 
     args = parser.parse_args()
     args.arch_encoder = args.arch_encoder.lower()
