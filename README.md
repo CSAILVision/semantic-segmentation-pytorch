@@ -124,22 +124,22 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     <tr>
         <td rowspan="2"><b>UperNet50</b></td>
         <td>No</td><td>40.44</td><td>79.80</td><td>60.12</td>
-        <td>-</td>
+        <td>8.4</td>
         <td rowspan="2">1.75 * 20 = 35.0</td>
     </tr>
     <tr>
         <td>Yes</td><td>41.55</td><td>80.23</td><td>60.89</td>
-        <td>-</td>
+        <td>2.9</td>
     </tr>
     <tr>
         <td rowspan="2"><b>UperNet101</b></td>
-        <td>No</td><td>41.98</td><td>80.63</td><td>61.34</td>
-        <td>-</td>
+        <td>No</td><td>42.00</td><td>80.79</td><td>61.40</td>
+        <td>7.8</td>
         <td rowspan="2">2.5 * 25 = 62.5</td>
     </tr>
     <tr>
         <td>Yes</td><td>42.66</td><td>81.01</td><td>61.84</td>
-        <td>-</td>
+        <td>2.3</td>
     </tr>
     <tr>
         <td>UPerNet-ResNext101 (coming soon!)</td>
