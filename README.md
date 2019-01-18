@@ -139,7 +139,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     </tr>
     <tr>
         <td>Yes</td><td>42.66</td><td>81.01</td><td>61.84</td>
-        <td>-2.3</td>
+        <td>2.3</td>
     </tr>
     <tr>
         <td>UPerNet-ResNext101 (coming soon!)</td>
