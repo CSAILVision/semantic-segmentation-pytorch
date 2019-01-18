@@ -153,7 +153,7 @@ The training is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB
 
 ## Environment
 The code is developed under the following configurations.
-- Hardware: 1-8 GPUs (with at least 12G GPU memories) (change ```[--num_gpus NUM_GPUS]``` accordingly)
+- Hardware: 1-8 GPUs (with at least 12G GPU memories) (change ```[--gpus GPUS]``` accordingly)
 - Software: Ubuntu 16.04.3 LTS, ***CUDA>=8.0, Python>=3.5, PyTorch>=0.4.0***
 
 ## Quick start: Test on an image using our trained model 
@@ -183,29 +183,31 @@ chmod +x download_ADE20K.sh
 ```
 2. Train a model (default: ResNet50dilated + PPM_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
 ```bash
-python3 train.py --num_gpus NUM_GPUS
+python3 train.py --gpus GPUS
 ```
+
+- To choose which gpus to use, you can either do ```--gpus 0-7```, or ```--gpus 0,2,4,6```.
 
 For example:
 
 * Train MobileNetV2dilated + C1_deepsup
 ```bash
-python3 train.py \
-    --num_gpus NUM_GPUS --arch_encoder mobilenetv2dilated --arch_decoder c1_deepsup \
+python3 train.py --gpus GPUS \
+    --arch_encoder mobilenetv2dilated --arch_decoder c1_deepsup \
     --fc_dim 320
 ```
 
 * Train ResNet18dilated + PPM_deepsup
 ```bash
-python3 train.py \
-    --num_gpus NUM_GPUS --arch_encoder resnet18dilated --arch_decoder ppm_deepsup \
+python3 train.py --gpus GPUS \
+    --arch_encoder resnet18dilated --arch_decoder ppm_deepsup \
     --fc_dim 512
 ```
 
 * Train UPerNet101
 ```bash
-python3 train.py \
-    --num_gpus NUM_GPUS --arch_encoder resnet101 --arch_decoder upernet \
+python3 train.py --gpus GPUS \
+    --arch_encoder resnet101 --arch_decoder upernet \
     --segm_downsampling_rate 4 --padding_constant 32
 ```
 
@@ -215,38 +217,33 @@ python3 train.py \
 ## Evaluation
 1. Evaluate a trained model on the validation set. ```--id``` is the folder name under ```ckpt``` directory. ```--suffix``` defines which checkpoint to use, for example ```_epoch_20.pth```. Add ```--visualize``` option to output visualizations as shown in teaser.
 ```bash
-python3 eval.py --id MODEL_ID --suffix SUFFIX
+python3 eval_multipro.py --gpus GPUS --id MODEL_ID --suffix SUFFIX
 ```
 
 For example:
 
 * Evaluate MobileNetV2dilated + C1_deepsup
 ```bash
-python3 eval.py \
+python3 eval_multipro.py --gpus GPUS \
     --id MODEL_ID --suffix SUFFIX --arch_encoder mobilenetv2dilated --arch_decoder c1_deepsup \
     --fc_dim 320
 ```
 
 * Evaluate ResNet18dilated + PPM_deepsup
 ```bash
-python3 eval.py \
+python3 eval_multipro.py --gpus GPUS \
     --id MODEL_ID --suffix SUFFIX --arch_encoder resnet18dilated --arch_decoder ppm_deepsup \
     --fc_dim 512
 ```
 
 * Evaluate UPerNet101
 ```bash
-python3 eval.py \
+python3 eval_multipro.py --gpus GPUS \
     --id MODEL_ID --suffix SUFFIX --arch_encoder resnet101 --arch_decoder upernet \
     --padding_constant 32
 ```
 
-***We also provide a multi-GPU evaluation script.*** To run the evaluation code on 8 GPUs, simply add ```--device 0-7```. You can also choose which GPUs to use, for example, ```--device 0,2,4,6```.
-```bash
-python3 eval_multipro.py --id MODEL_ID --suffix SUFFIX --device DEVICE_ID
-```
-
-2. See full input arguments via ```python3 eval.py -h ``` and ```python3 eval_multipro.py -h ```.
+2. See full input arguments via ```python3 eval_multipro.py -h ```.
 
 ## Reference
 
