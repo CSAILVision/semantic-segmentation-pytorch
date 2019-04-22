@@ -11,6 +11,8 @@ http://sceneparsing.csail.mit.edu/model/pytorch
 <img src="./teaser/ADE_val_00000278.png" width="900"/>
 <img src="./teaser/ADE_val_00001519.png" width="900"/>
 [From left to right: Test Image, Ground Truth, Predicted Result]
+Color encoding of semantic categories can be found here:
+https://docs.google.com/spreadsheets/d/1se8YEtb2detS7OuPE86fXGyD269pMycAWe2mtKUj2W8/edit?usp=sharing
 
 ## Highlights
 
