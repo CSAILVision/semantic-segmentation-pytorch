@@ -167,7 +167,7 @@ chmod +x demo_test.sh
 ```
 This script downloads a trained model (ResNet50dilated + PPM_deepsup) and a test image, runs the test script, and saves predicted segmentation (.png) to the working directory.
 
-2. To test on multiple images, you can simply do something as the following (```$PATH_IMG1, $PATH_IMG2, $PATH_IMG3```are your image paths):
+2. To test on multiple images or a folder of images, you can simply do something as the following (```$PATH_IMG1, $PATH_IMG2, $PATH_IMG3```are your image paths):
 ```
 python3 -u test.py \
   --model_path $MODEL_PATH \

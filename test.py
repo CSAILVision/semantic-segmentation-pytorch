@@ -10,7 +10,7 @@ from scipy.io import loadmat
 # Our libs
 from dataset import TestDataset
 from models import ModelBuilder, SegmentationModule
-from utils import colorEncode
+from utils import colorEncode, find_recursive
 from lib.nn import user_scattered_collate, async_copy_to
 from lib.utils import as_numpy
 import lib.utils.data as torchdata
@@ -24,11 +24,10 @@ def visualize_result(data, pred, args):
     (img, info) = data
 
     # prediction
-    pred_color = colorEncode(pred, colors)
+    pred_color = colorEncode(pred, colors).astype(np.uint8)
 
     # aggregate images and save
-    im_vis = np.concatenate((img, pred_color),
-                            axis=1).astype(np.uint8)
+    im_vis = np.concatenate((img, pred_color), axis=1)
 
     img_name = info.split('/')[-1]
     cv2.imwrite(os.path.join(args.result,
@@ -93,8 +92,11 @@ def main(args):
     segmentation_module = SegmentationModule(net_encoder, net_decoder, crit)
 
     # Dataset and Loader
-    # list_test = [{'fpath_img': args.test_img}]
-    list_test = [{'fpath_img': x} for x in args.test_imgs]
+    if len(args.test_imgs) == 1 and os.path.isdir(args.test_imgs[0]):
+        test_imgs = find_recursive(args.test_imgs[0])
+    else:
+        test_imgs = args.test_imgs
+    list_test = [{'fpath_img': x} for x in test_imgs]
     dataset_test = TestDataset(
         list_test, args, max_sample=args.num_val)
     loader_test = torchdata.DataLoader(
@@ -120,7 +122,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # Path related arguments
     parser.add_argument('--test_imgs', required=True, nargs='+', type=str,
-                        help='a list of image paths that needs to be tested')
+                        help='a list of image paths, or a directory name')
     parser.add_argument('--model_path', required=True,
                         help='folder to model path')
     parser.add_argument('--suffix', default='_epoch_20.pth',
