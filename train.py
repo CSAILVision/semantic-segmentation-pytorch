@@ -226,7 +226,7 @@ if __name__ == '__main__':
 
     # Path related arguments
     parser.add_argument('--list_train',
-                        default='./data/train.odgt')
+                        default='./data/training.odgt')
     parser.add_argument('--list_val',
                         default='./data/validation.odgt')
     parser.add_argument('--root_dataset',
