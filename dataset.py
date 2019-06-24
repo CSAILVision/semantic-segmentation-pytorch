@@ -51,9 +51,9 @@ class BaseDataset(torchdata.Dataset):
 
 
 class TrainDataset(BaseDataset):
-    def __init__(self, odgt, opt, batch_per_gpu=1, **kwargs):
+    def __init__(self, root_dataset, odgt, opt, batch_per_gpu=1, **kwargs):
         super(TrainDataset, self).__init__(odgt, opt, **kwargs)
-        self.root_dataset = opt.root_dataset
+        self.root_dataset = root_dataset
         self.random_flip = opt.random_flip
         # down sampling rate of segm labe
         self.segm_downsampling_rate = opt.segm_downsampling_rate
@@ -101,7 +101,7 @@ class TrainDataset(BaseDataset):
         batch_records = self._get_sub_batch()
 
         # resize all images' short edges to the chosen size
-        if isinstance(self.imgSize, list):
+        if isinstance(self.imgSize, list) or isinstance(self.imgSize, tuple):
             this_short_size = np.random.choice(self.imgSize)
         else:
             this_short_size = self.imgSize
@@ -184,9 +184,9 @@ class TrainDataset(BaseDataset):
 
 
 class ValDataset(BaseDataset):
-    def __init__(self, odgt, opt, **kwargs):
+    def __init__(self, root_dataset, odgt, opt, **kwargs):
         super(ValDataset, self).__init__(odgt, opt, **kwargs)
-        self.root_dataset = opt.root_dataset
+        self.root_dataset = root_dataset
 
     def __getitem__(self, index):
         this_record = self.list_sample[index]
