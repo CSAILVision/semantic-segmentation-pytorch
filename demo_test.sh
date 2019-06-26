@@ -24,9 +24,6 @@ fi
 
 # Inference
 python3 -u test.py \
-  --model_path $MODEL_PATH \
+  --cfg config/ade20k-resnet50dilated-ppm_deepsup.yaml \
   --test_imgs $TEST_IMG \
-  --arch_encoder resnet50dilated \
-  --arch_decoder ppm_deepsup \
-  --fc_dim 2048 \
-  --result $RESULT_PATH
+  DIR $MODEL_PATH
