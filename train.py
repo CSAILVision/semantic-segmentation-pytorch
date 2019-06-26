@@ -80,9 +80,6 @@ def checkpoint(nets, history, cfg, epoch_num):
     dict_encoder = net_encoder.state_dict()
     dict_decoder = net_decoder.state_dict()
 
-    # dict_encoder_save = {k: v for k, v in dict_encoder.items() if not (k.endswith('_tmp_running_mean') or k.endswith('tmp_running_var'))}
-    # dict_decoder_save = {k: v for k, v in dict_decoder.items() if not (k.endswith('_tmp_running_mean') or k.endswith('tmp_running_var'))}
-
     torch.save(history,
                '{}/history_{}'.format(cfg.TRAIN.ckpt, suffix_latest))
     torch.save(dict_encoder,
@@ -141,15 +138,15 @@ def adjust_learning_rate(optimizers, cur_iter, cfg):
         param_group['lr'] = cfg.TRAIN.running_lr_decoder
 
 
-def main(cfg):
+def main(cfg, gpus):
     # Network Builders
     builder = ModelBuilder()
     net_encoder = builder.build_encoder(
-        arch=cfg.MODEL.arch_encoder,
+        arch=cfg.MODEL.arch_encoder.lower(),
         fc_dim=cfg.MODEL.fc_dim,
         weights=cfg.MODEL.weights_encoder)
     net_decoder = builder.build_decoder(
-        arch=cfg.MODEL.arch_decoder,
+        arch=cfg.MODEL.arch_decoder.lower(),
         fc_dim=cfg.MODEL.fc_dim,
         num_class=cfg.DATASET.num_class,
         weights=cfg.MODEL.weights_decoder)
@@ -167,12 +164,12 @@ def main(cfg):
     dataset_train = TrainDataset(
         cfg.DATASET.root_dataset,
         cfg.DATASET.list_train,
-        cfg.TRAIN,
+        cfg.DATASET,
         batch_per_gpu=cfg.TRAIN.batch_size_per_gpu)
 
     loader_train = torchdata.DataLoader(
         dataset_train,
-        batch_size=len(cfg.GPUS),  # we have modified data_parallel
+        batch_size=len(gpus),  # we have modified data_parallel
         shuffle=False,  # we do not use this param
         collate_fn=user_scattered_collate,
         num_workers=cfg.TRAIN.workers,
@@ -184,10 +181,10 @@ def main(cfg):
     iterator_train = iter(loader_train)
 
     # load nets into gpu
-    if len(cfg.GPUS) > 1:
+    if len(gpus) > 1:
         segmentation_module = UserScatteredDataParallel(
             segmentation_module,
-            device_ids=cfg.GPUS)
+            device_ids=gpus)
         # For sync bn
         patch_replication_callback(segmentation_module)
     segmentation_module.cuda()
@@ -225,7 +222,8 @@ if __name__ == '__main__':
     parser.add_argument(
         "--gpus",
         default="0-3",
-        help="gpus to use, e.g. 0-3 or 0,1,2,3")
+        help="gpus to use, e.g. 0-3 or 0,1,2,3"
+    )
     parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
@@ -242,40 +240,24 @@ if __name__ == '__main__':
     logger.info("Loaded configuration file {}".format(args.cfg))
     logger.info("Running with config:\n{}".format(cfg))
 
+    if not os.path.isdir(cfg.DIR):
+        os.makedirs(cfg.DIR)
+    logger.info("Outputing checkpoints to: {}".format(cfg.DIR))
+    with open(os.path.join(cfg.DIR, 'config.yaml'), 'w') as f:
+        f.write("{}".format(cfg))
+
     # Parse gpu ids
-    all_gpus = parse_devices(args.gpus)
-    all_gpus = [x.replace('gpu', '') for x in all_gpus]
-    cfg.GPUS = [int(x) for x in all_gpus]
-    num_gpus = len(cfg.GPUS)
+    gpus = parse_devices(args.gpus)
+    gpus = [x.replace('gpu', '') for x in gpus]
+    gpus = [int(x) for x in gpus]
+    num_gpus = len(gpus)
     cfg.TRAIN.batch_size = num_gpus * cfg.TRAIN.batch_size_per_gpu
 
     cfg.TRAIN.max_iters = cfg.TRAIN.epoch_iters * cfg.TRAIN.num_epoch
     cfg.TRAIN.running_lr_encoder = cfg.TRAIN.lr_encoder
     cfg.TRAIN.running_lr_decoder = cfg.TRAIN.lr_decoder
 
-    cfg.MODEL.arch_encoder = cfg.MODEL.arch_encoder.lower()
-    cfg.MODEL.arch_decoder = cfg.MODEL.arch_decoder.lower()
-
-    # Model ID
-    cfg.MODEL.id += '-' + cfg.MODEL.arch_encoder
-    cfg.MODEL.id += '-' + cfg.MODEL.arch_decoder
-    cfg.MODEL.id += '-ngpus' + str(num_gpus)
-    cfg.MODEL.id += '-batchSize' + str(cfg.TRAIN.batch_size)
-    cfg.MODEL.id += '-imgMaxSize' + str(cfg.TRAIN.imgMaxSize)
-    cfg.MODEL.id += '-paddingConst' + str(cfg.TRAIN.padding_constant)
-    cfg.MODEL.id += '-segmDownsampleRate' + str(cfg.TRAIN.segm_downsampling_rate)
-    cfg.MODEL.id += '-LR_encoder' + str(cfg.TRAIN.lr_encoder)
-    cfg.MODEL.id += '-LR_decoder' + str(cfg.TRAIN.lr_decoder)
-    cfg.MODEL.id += '-epoch' + str(cfg.TRAIN.num_epoch)
-    if cfg.TRAIN.fix_bn:
-        cfg.MODEL.id += '-fixBN'
-    print('Model ID: {}'.format(cfg.MODEL.id))
-
-    cfg.TRAIN.ckpt = os.path.join(cfg.TRAIN.ckpt, cfg.MODEL.id)
-    if not os.path.isdir(cfg.TRAIN.ckpt):
-        os.makedirs(cfg.TRAIN.ckpt)
-
     random.seed(cfg.TRAIN.seed)
     torch.manual_seed(cfg.TRAIN.seed)
 
-    main(cfg)
+    main(cfg, gpus)

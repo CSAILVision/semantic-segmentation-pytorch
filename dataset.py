@@ -10,7 +10,7 @@ import numpy as np
 class BaseDataset(torchdata.Dataset):
     def __init__(self, odgt, opt, **kwargs):
         # parse options
-        self.imgSize = opt.imgSize
+        self.imgSizes = opt.imgSizes
         self.imgMaxSize = opt.imgMaxSize
         # max down sampling rate of network to avoid rounding during conv or pooling
         self.padding_constant = opt.padding_constant
@@ -101,10 +101,10 @@ class TrainDataset(BaseDataset):
         batch_records = self._get_sub_batch()
 
         # resize all images' short edges to the chosen size
-        if isinstance(self.imgSize, list) or isinstance(self.imgSize, tuple):
-            this_short_size = np.random.choice(self.imgSize)
+        if isinstance(self.imgSizes, list) or isinstance(self.imgSizes, tuple):
+            this_short_size = np.random.choice(self.imgSizes)
         else:
-            this_short_size = self.imgSize
+            this_short_size = self.imgSizes
 
         # calculate the BATCH's height and width
         # since we concat more than one samples, the batch's h and w shall be larger than EACH sample
@@ -199,7 +199,7 @@ class ValDataset(BaseDataset):
         ori_height, ori_width, _ = img.shape
 
         img_resized_list = []
-        for this_short_size in self.imgSize:
+        for this_short_size in self.imgSizes:
             # calculate target height and width
             scale = min(this_short_size / float(min(ori_height, ori_width)),
                         self.imgMaxSize / float(max(ori_height, ori_width)))
@@ -246,7 +246,7 @@ class TestDataset(BaseDataset):
         ori_height, ori_width, _ = img.shape
 
         img_resized_list = []
-        for this_short_size in self.imgSize:
+        for this_short_size in self.imgSizes:
             # calculate target height and width
             scale = min(this_short_size / float(min(ori_height, ori_width)),
                         self.imgMaxSize / float(max(ori_height, ori_width)))

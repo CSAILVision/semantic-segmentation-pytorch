@@ -5,6 +5,7 @@ from yacs.config import CfgNode as CN
 # -----------------------------------------------------------------------------
 
 _C = CN()
+_C.DIR = "ckpt/ade20k-resnet50dilated-ppm_deepsup"
 
 # -----------------------------------------------------------------------------
 # Dataset
@@ -14,13 +15,21 @@ _C.DATASET.root_dataset = "./data/"
 _C.DATASET.list_train = "./data/training.odgt"
 _C.DATASET.list_val = "./data/validation.odgt"
 _C.DATASET.num_class = 150
+# multiscale train/test, size of short edge (int or tuple)
+_C.DATASET.imgSizes = (300, 375, 450, 525, 600)
+# maximum input image size of long edge
+_C.DATASET.imgMaxSize = 1000
+# maxmimum downsampling rate of the network
+_C.DATASET.padding_constant = 8
+# downsampling rate of the segmentation label
+_C.DATASET.segm_downsampling_rate = 8
+# randomly horizontally flip images when train/test
+_C.DATASET.random_flip = True
 
 # -----------------------------------------------------------------------------
 # Model
 # -----------------------------------------------------------------------------
 _C.MODEL = CN()
-# a name for identifying the model
-_C.MODEL.id = "baseline"
 # architecture of net_encoder
 _C.MODEL.arch_encoder = "resnet50dilated"
 # architecture of net_decoder
@@ -60,17 +69,6 @@ _C.TRAIN.fix_bn = False
 # number of data loading workers
 _C.TRAIN.workers = 16
 
-# input image size of short edge (int or tuple)
-_C.TRAIN.imgSize = (300, 375, 450, 525, 600)
-# maximum input image size of long edge
-_C.TRAIN.imgMaxSize = 1000
-# maxmimum downsampling rate of the network
-_C.TRAIN.padding_constant = 8
-# downsampling rate of the segmentation label
-_C.TRAIN.segm_downsampling_rate = 8
-# if horizontally flip images when training
-_C.TRAIN.random_flip = True
-
 # folder to output checkpoints
 _C.TRAIN.ckpt = "./ckpt"
 # frequency to display
@@ -82,3 +80,7 @@ _C.TRAIN.seed = 304
 # Testing
 # -----------------------------------------------------------------------------
 _C.TEST = CN()
+# currently only supports 1
+_C.TEST.batch_size = 1
+# folder to output visualization results
+_C.TEST.result = "./"
