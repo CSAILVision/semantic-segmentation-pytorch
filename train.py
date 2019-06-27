@@ -9,12 +9,12 @@ from distutils.version import LooseVersion
 import torch
 import torch.nn as nn
 # Our libs
+from config import cfg
 from dataset import TrainDataset
 from models import ModelBuilder, SegmentationModule
 from utils import AverageMeter, parse_devices, setup_logger
 from lib.nn import UserScatteredDataParallel, user_scattered_collate, patch_replication_callback
 import lib.utils.data as torchdata
-from config import cfg
 
 
 # train one epoch
@@ -75,17 +75,19 @@ def train(segmentation_module, iterator, optimizers, history, epoch, cfg):
 def checkpoint(nets, history, cfg, epoch_num):
     print('Saving checkpoints...')
     (net_encoder, net_decoder, crit) = nets
-    suffix_latest = 'epoch_{}.pth'.format(epoch_num)
 
     dict_encoder = net_encoder.state_dict()
     dict_decoder = net_decoder.state_dict()
 
-    torch.save(history,
-               '{}/history_{}'.format(cfg.TRAIN.ckpt, suffix_latest))
-    torch.save(dict_encoder,
-               '{}/encoder_{}'.format(cfg.TRAIN.ckpt, suffix_latest))
-    torch.save(dict_decoder,
-               '{}/decoder_{}'.format(cfg.TRAIN.ckpt, suffix_latest))
+    torch.save(
+        history,
+        '{}/history_epoch_{}.pth'.format(cfg.DIR, epoch_num))
+    torch.save(
+        dict_encoder,
+       '{}/encoder_epoch_{}.pth'.format(cfg.DIR, epoch_num))
+    torch.save(
+        dict_decoder,
+       '{}/decoder_epoch_{}.pth'.format(cfg.DIR, epoch_num))
 
 
 def group_weight(module):

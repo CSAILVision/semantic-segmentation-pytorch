@@ -141,11 +141,6 @@ if __name__ == '__main__':
         help="an image paths, or a directory name"
     )
     parser.add_argument(
-        "--suffix",
-        default="_epoch_20.pth",
-        help="which snapshot to load"
-    )
-    parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
         default=None,
@@ -166,9 +161,9 @@ if __name__ == '__main__':
 
     # absolute paths of model weights
     cfg.MODEL.weights_encoder = os.path.join(
-        cfg.DIR, 'encoder' + args.suffix)
+        cfg.DIR, 'encoder' + cfg.TEST.suffix)
     cfg.MODEL.weights_decoder = os.path.join(
-        cfg.DIR, 'decoder' + args.suffix)
+        cfg.DIR, 'decoder' + cfg.TEST.suffix)
 
     assert os.path.exists(cfg.MODEL.weights_encoder) and \
         os.path.exists(cfg.MODEL.weights_encoder), "checkpoint does not exitst!"
