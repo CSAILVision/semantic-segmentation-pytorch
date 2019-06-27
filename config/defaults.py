@@ -69,12 +69,21 @@ _C.TRAIN.fix_bn = False
 # number of data loading workers
 _C.TRAIN.workers = 16
 
-# folder to output checkpoints
-_C.TRAIN.ckpt = "./ckpt"
 # frequency to display
 _C.TRAIN.disp_iter = 20
 # manual seed
 _C.TRAIN.seed = 304
+
+# -----------------------------------------------------------------------------
+# Validation
+# -----------------------------------------------------------------------------
+_C.VAL = CN()
+# currently only supports 1
+_C.VAL.batch_size = 1
+# output visualization during validation
+_C.VAL.visualize = False
+# the checkpoint to evaluate on
+_C.VAL.suffix = "_epoch_20.pth"
 
 # -----------------------------------------------------------------------------
 # Testing
@@ -82,5 +91,7 @@ _C.TRAIN.seed = 304
 _C.TEST = CN()
 # currently only supports 1
 _C.TEST.batch_size = 1
+# the checkpoint to test on
+_C.TEST.suffix = "_epoch_20.pth"
 # folder to output visualization results
 _C.TEST.result = "./"
