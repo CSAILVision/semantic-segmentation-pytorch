@@ -35,7 +35,7 @@ TRAIN:
 
 VAL:
   visualize: False
-  suffix: "_epoch_7.pth"
+  suffix: "_epoch_20.pth"
 
 TEST:
   suffix: "_epoch_20.pth"

@@ -7,6 +7,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from scipy.io import loadmat
+import csv
 # Our libs
 from dataset import TestDataset
 from models import ModelBuilder, SegmentationModule
@@ -19,12 +20,29 @@ from tqdm import tqdm
 from config import cfg
 
 colors = loadmat('data/color150.mat')['colors']
+names = {}
+with open('data/object150_info.csv') as f:
+    reader = csv.reader(f)
+    next(reader)
+    for row in reader:
+        names[int(row[0])] = row[5].split(";")[0]
 
 
 def visualize_result(data, pred, cfg):
     (img, info) = data
 
-    # prediction
+    # print predictions in descending order
+    pred = np.int32(pred)
+    pixs = pred.size
+    uniques, counts = np.unique(pred, return_counts=True)
+    print("Predictions in [{}]:".format(info))
+    for idx in np.argsort(counts)[::-1]:
+        name = names[uniques[idx] + 1]
+        ratio = counts[idx] / pixs * 100
+        if ratio > 1.:
+            print("  {}: {:.2f}%".format(name, ratio))
+
+    # colorize prediction
     pred_color = colorEncode(pred, colors).astype(np.uint8)
 
     # aggregate images and save
@@ -122,6 +140,12 @@ if __name__ == '__main__':
         description="PyTorch Semantic Segmentation Training"
     )
     parser.add_argument(
+        "--imgs",
+        required=True,
+        type=str,
+        help="an image paths, or a directory name"
+    )
+    parser.add_argument(
         "--cfg",
         default="config/ade20k-resnet50dilated-ppm_deepsup.yaml",
         metavar="FILE",
@@ -133,12 +157,6 @@ if __name__ == '__main__':
         default=0,
         type=int,
         help="gpu id for evaluation"
-    )
-    parser.add_argument(
-        "--test_imgs",
-        required=True,
-        type=str,
-        help="an image paths, or a directory name"
     )
     parser.add_argument(
         "opts",
@@ -169,12 +187,12 @@ if __name__ == '__main__':
         os.path.exists(cfg.MODEL.weights_encoder), "checkpoint does not exitst!"
 
     # generate testing image list
-    if os.path.isdir(args.test_imgs[0]):
-        test_imgs = find_recursive(args.test_imgs[0])
+    if os.path.isdir(args.imgs[0]):
+        imgs = find_recursive(args.imgs[0])
     else:
-        test_imgs = [args.test_imgs]
-    assert len(test_imgs), "test_imgs should be a path to image (.jpg) or directory."
-    cfg.list_test = [{'fpath_img': x} for x in test_imgs]
+        imgs = [args.imgs]
+    assert len(imgs), "imgs should be a path to image (.jpg) or directory."
+    cfg.list_test = [{'fpath_img': x} for x in imgs]
 
     if not os.path.isdir(cfg.TEST.result):
         os.makedirs(cfg.TEST.result)

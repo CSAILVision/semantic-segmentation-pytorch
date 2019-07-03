@@ -24,8 +24,8 @@ fi
 
 # Inference
 python3 -u test.py \
+  --imgs $TEST_IMG \
   --cfg config/ade20k-resnet50dilated-ppm_deepsup.yaml \
-  --test_imgs $TEST_IMG \
   DIR $MODEL_PATH \
   TEST.result ./ \
   TEST.suffix _epoch_20.pth
