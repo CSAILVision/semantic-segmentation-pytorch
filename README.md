@@ -48,9 +48,6 @@ Encoder:
 - ResNet50dilated
 - ResNet101dilated
 
-***Coming soon***:
-- ResNeXt101dilated
-
 Decoder:
 - C1 (1 convolution module)
 - C1_deepsup (C1 + deep supervision trick)
@@ -149,12 +146,6 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td>Yes</td><td>42.66</td><td>81.01</td><td>61.84</td>
         <td>2.3</td>
     </tr>
-    <tr>
-        <td>UPerNet-ResNext101 (coming soon!)</td>
-        <td>-</td><td>-</td><td>-</td><td>-</td>
-        <td>-</td>
-        <td>-</td>
-    </tr>
 </tbody></table>
 
 The training is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GPU memory), ***except for*** ResNet101dilated, which is benchmarked on a server with 8 NVIDIA Tesla P40 GPUS (22GB GPU memory), because of the insufficient memory issue when using dilated conv on a very deep network. The inference speed is benchmarked a single NVIDIA Pascal Titan Xp GPU, without visualization.
@@ -192,7 +183,7 @@ python3 train.py --gpus $GPUS --cfg $CFG
 ```
 - To choose which gpus to use, you can either do ```--gpus 0-7```, or ```--gpus 0,2,4,6```.
 
-You can start with our provided configurations, for example:
+For example, you can start with our provided configurations: 
 
 * Train MobileNetV2dilated + C1_deepsup
 ```bash
