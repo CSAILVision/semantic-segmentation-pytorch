@@ -5,20 +5,20 @@ DATASET:
   num_class: 150
   imgSizes: (300, 375, 450, 525, 600)
   imgMaxSize: 1000
-  padding_constant: 8
-  segm_downsampling_rate: 8
+  padding_constant: 32
+  segm_downsampling_rate: 4
   random_flip: True
 
 MODEL:
-  arch_encoder: "resnet50dilated"
-  arch_decoder: "ppm_deepsup"
+  arch_encoder: "resnet101"
+  arch_decoder: "upernet"
   weights_encoder: ""
   weights_decoder: ""
   fc_dim: 2048
 
 TRAIN:
   batch_size_per_gpu: 2
-  num_epoch: 20
+  num_epoch: 40
   start_epoch: 0
   epoch_iters: 5000
   optim: "SGD"
@@ -35,10 +35,10 @@ TRAIN:
 
 VAL:
   visualize: False
-  suffix: "_epoch_20.pth"
+  suffix: "_epoch_40.pth"
 
 TEST:
-  suffix: "_epoch_20.pth"
+  suffix: "_epoch_40.pth"
   result: "./"
 
-DIR: "ckpt/ade20k-resnet50dilated-ppm_deepsup"
+DIR: "ckpt/ade20k-resnet101-upernet"
