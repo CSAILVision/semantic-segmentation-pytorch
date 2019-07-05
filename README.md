@@ -154,6 +154,7 @@ The training is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB
 The code is developed under the following configurations.
 - Hardware: 1-8 GPUs (with at least 12G GPU memories) (change ```[--gpus GPUS]``` accordingly)
 - Software: Ubuntu 16.04.3 LTS, ***CUDA>=8.0, Python>=3.5, PyTorch>=0.4.0***
+- Dependencies: numpy, scipy, opencv, yacs, tqdm
 
 ## Quick start: Test on an image using our trained model 
 1. Here is a simple demo to do inference on a single image:
