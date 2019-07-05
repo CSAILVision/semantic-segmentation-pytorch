@@ -1,5 +1,5 @@
-python=3.6
 numpy
+scipy
 pytorch=0.4.1
 torchvision
 opencv3
