@@ -20,6 +20,7 @@ https://docs.google.com/spreadsheets/d/1se8YEtb2detS7OuPE86fXGyD269pMycAWe2mtKUj
 ## Updates
 - We use configuration files to store most options which were in argument parser. The definitions of options are detailed in ```config/defaults.py```.
 
+
 ## Highlights
 
 ### Syncronized Batch Normalization on PyTorch
