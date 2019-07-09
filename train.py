@@ -9,25 +9,26 @@ from distutils.version import LooseVersion
 import torch
 import torch.nn as nn
 # Our libs
+from config import cfg
 from dataset import TrainDataset
 from models import ModelBuilder, SegmentationModule
-from utils import AverageMeter, parse_devices
+from utils import AverageMeter, parse_devices, setup_logger
 from lib.nn import UserScatteredDataParallel, user_scattered_collate, patch_replication_callback
 import lib.utils.data as torchdata
 
 
 # train one epoch
-def train(segmentation_module, iterator, optimizers, history, epoch, args):
+def train(segmentation_module, iterator, optimizers, history, epoch, cfg):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     ave_total_loss = AverageMeter()
     ave_acc = AverageMeter()
 
-    segmentation_module.train(not args.fix_bn)
+    segmentation_module.train(not cfg.TRAIN.fix_bn)
 
     # main loop
     tic = time.time()
-    for i in range(args.epoch_iters):
+    for i in range(cfg.TRAIN.epoch_iters):
         batch_data = next(iterator)
         data_time.update(time.time() - tic)
 
@@ -52,42 +53,41 @@ def train(segmentation_module, iterator, optimizers, history, epoch, args):
         ave_acc.update(acc.data.item()*100)
 
         # calculate accuracy, and display
-        if i % args.disp_iter == 0:
+        if i % cfg.TRAIN.disp_iter == 0:
             print('Epoch: [{}][{}/{}], Time: {:.2f}, Data: {:.2f}, '
                   'lr_encoder: {:.6f}, lr_decoder: {:.6f}, '
                   'Accuracy: {:4.2f}, Loss: {:.6f}'
-                  .format(epoch, i, args.epoch_iters,
+                  .format(epoch, i, cfg.TRAIN.epoch_iters,
                           batch_time.average(), data_time.average(),
-                          args.running_lr_encoder, args.running_lr_decoder,
+                          cfg.TRAIN.running_lr_encoder, cfg.TRAIN.running_lr_decoder,
                           ave_acc.average(), ave_total_loss.average()))
 
-            fractional_epoch = epoch - 1 + 1. * i / args.epoch_iters
+            fractional_epoch = epoch - 1 + 1. * i / cfg.TRAIN.epoch_iters
             history['train']['epoch'].append(fractional_epoch)
             history['train']['loss'].append(loss.data.item())
             history['train']['acc'].append(acc.data.item())
 
         # adjust learning rate
-        cur_iter = i + (epoch - 1) * args.epoch_iters
-        adjust_learning_rate(optimizers, cur_iter, args)
+        cur_iter = i + (epoch - 1) * cfg.TRAIN.epoch_iters
+        adjust_learning_rate(optimizers, cur_iter, cfg)
 
 
-def checkpoint(nets, history, args, epoch_num):
+def checkpoint(nets, history, cfg, epoch_num):
     print('Saving checkpoints...')
     (net_encoder, net_decoder, crit) = nets
-    suffix_latest = 'epoch_{}.pth'.format(epoch_num)
 
     dict_encoder = net_encoder.state_dict()
     dict_decoder = net_decoder.state_dict()
 
-    # dict_encoder_save = {k: v for k, v in dict_encoder.items() if not (k.endswith('_tmp_running_mean') or k.endswith('tmp_running_var'))}
-    # dict_decoder_save = {k: v for k, v in dict_decoder.items() if not (k.endswith('_tmp_running_mean') or k.endswith('tmp_running_var'))}
-
-    torch.save(history,
-               '{}/history_{}'.format(args.ckpt, suffix_latest))
-    torch.save(dict_encoder,
-               '{}/encoder_{}'.format(args.ckpt, suffix_latest))
-    torch.save(dict_decoder,
-               '{}/decoder_{}'.format(args.ckpt, suffix_latest))
+    torch.save(
+        history,
+        '{}/history_epoch_{}.pth'.format(cfg.DIR, epoch_num))
+    torch.save(
+        dict_encoder,
+       '{}/encoder_epoch_{}.pth'.format(cfg.DIR, epoch_num))
+    torch.save(
+        dict_decoder,
+       '{}/decoder_epoch_{}.pth'.format(cfg.DIR, epoch_num))
 
 
 def group_weight(module):
@@ -113,94 +113,96 @@ def group_weight(module):
     return groups
 
 
-def create_optimizers(nets, args):
+def create_optimizers(nets, cfg):
     (net_encoder, net_decoder, crit) = nets
     optimizer_encoder = torch.optim.SGD(
         group_weight(net_encoder),
-        lr=args.lr_encoder,
-        momentum=args.beta1,
-        weight_decay=args.weight_decay)
+        lr=cfg.TRAIN.lr_encoder,
+        momentum=cfg.TRAIN.beta1,
+        weight_decay=cfg.TRAIN.weight_decay)
     optimizer_decoder = torch.optim.SGD(
         group_weight(net_decoder),
-        lr=args.lr_decoder,
-        momentum=args.beta1,
-        weight_decay=args.weight_decay)
+        lr=cfg.TRAIN.lr_decoder,
+        momentum=cfg.TRAIN.beta1,
+        weight_decay=cfg.TRAIN.weight_decay)
     return (optimizer_encoder, optimizer_decoder)
 
 
-def adjust_learning_rate(optimizers, cur_iter, args):
-    scale_running_lr = ((1. - float(cur_iter) / args.max_iters) ** args.lr_pow)
-    args.running_lr_encoder = args.lr_encoder * scale_running_lr
-    args.running_lr_decoder = args.lr_decoder * scale_running_lr
+def adjust_learning_rate(optimizers, cur_iter, cfg):
+    scale_running_lr = ((1. - float(cur_iter) / cfg.TRAIN.max_iters) ** cfg.TRAIN.lr_pow)
+    cfg.TRAIN.running_lr_encoder = cfg.TRAIN.lr_encoder * scale_running_lr
+    cfg.TRAIN.running_lr_decoder = cfg.TRAIN.lr_decoder * scale_running_lr
 
     (optimizer_encoder, optimizer_decoder) = optimizers
     for param_group in optimizer_encoder.param_groups:
-        param_group['lr'] = args.running_lr_encoder
+        param_group['lr'] = cfg.TRAIN.running_lr_encoder
     for param_group in optimizer_decoder.param_groups:
-        param_group['lr'] = args.running_lr_decoder
+        param_group['lr'] = cfg.TRAIN.running_lr_decoder
 
 
-def main(args):
+def main(cfg, gpus):
     # Network Builders
     builder = ModelBuilder()
     net_encoder = builder.build_encoder(
-        arch=args.arch_encoder,
-        fc_dim=args.fc_dim,
-        weights=args.weights_encoder)
+        arch=cfg.MODEL.arch_encoder.lower(),
+        fc_dim=cfg.MODEL.fc_dim,
+        weights=cfg.MODEL.weights_encoder)
     net_decoder = builder.build_decoder(
-        arch=args.arch_decoder,
-        fc_dim=args.fc_dim,
-        num_class=args.num_class,
-        weights=args.weights_decoder)
+        arch=cfg.MODEL.arch_decoder.lower(),
+        fc_dim=cfg.MODEL.fc_dim,
+        num_class=cfg.DATASET.num_class,
+        weights=cfg.MODEL.weights_decoder)
 
     crit = nn.NLLLoss(ignore_index=-1)
 
-    if args.arch_decoder.endswith('deepsup'):
+    if cfg.MODEL.arch_decoder.endswith('deepsup'):
         segmentation_module = SegmentationModule(
-            net_encoder, net_decoder, crit, args.deep_sup_scale)
+            net_encoder, net_decoder, crit, cfg.TRAIN.deep_sup_scale)
     else:
         segmentation_module = SegmentationModule(
             net_encoder, net_decoder, crit)
 
     # Dataset and Loader
     dataset_train = TrainDataset(
-        args.list_train, args, batch_per_gpu=args.batch_size_per_gpu)
+        cfg.DATASET.root_dataset,
+        cfg.DATASET.list_train,
+        cfg.DATASET,
+        batch_per_gpu=cfg.TRAIN.batch_size_per_gpu)
 
     loader_train = torchdata.DataLoader(
         dataset_train,
-        batch_size=len(args.gpus),  # we have modified data_parallel
+        batch_size=len(gpus),  # we have modified data_parallel
         shuffle=False,  # we do not use this param
         collate_fn=user_scattered_collate,
-        num_workers=int(args.workers),
+        num_workers=cfg.TRAIN.workers,
         drop_last=True,
         pin_memory=True)
-
-    print('1 Epoch = {} iters'.format(args.epoch_iters))
+    print('1 Epoch = {} iters'.format(cfg.TRAIN.epoch_iters))
 
     # create loader iterator
     iterator_train = iter(loader_train)
 
     # load nets into gpu
-    if len(args.gpus) > 1:
+    if len(gpus) > 1:
         segmentation_module = UserScatteredDataParallel(
             segmentation_module,
-            device_ids=args.gpus)
+            device_ids=gpus)
         # For sync bn
         patch_replication_callback(segmentation_module)
     segmentation_module.cuda()
 
     # Set up optimizers
     nets = (net_encoder, net_decoder, crit)
-    optimizers = create_optimizers(nets, args)
+    optimizers = create_optimizers(nets, cfg)
 
     # Main loop
     history = {'train': {'epoch': [], 'loss': [], 'acc': []}}
 
-    for epoch in range(args.start_epoch, args.num_epoch + 1):
-        train(segmentation_module, iterator_train, optimizers, history, epoch, args)
+    for epoch in range(cfg.TRAIN.start_epoch, cfg.TRAIN.num_epoch + 1):
+        train(segmentation_module, iterator_train, optimizers, history, epoch, cfg)
 
         # checkpointing
-        checkpoint(nets, history, args, epoch)
+        checkpoint(nets, history, cfg, epoch)
 
     print('Training Done!')
 
@@ -209,117 +211,55 @@ if __name__ == '__main__':
     assert LooseVersion(torch.__version__) >= LooseVersion('0.4.0'), \
         'PyTorch>=0.4.0 is required'
 
-    parser = argparse.ArgumentParser()
-    # Model related arguments
-    parser.add_argument('--id', default='baseline',
-                        help="a name for identifying the model")
-    parser.add_argument('--arch_encoder', default='resnet50dilated',
-                        help="architecture of net_encoder")
-    parser.add_argument('--arch_decoder', default='ppm_deepsup',
-                        help="architecture of net_decoder")
-    parser.add_argument('--weights_encoder', default='',
-                        help="weights to finetune net_encoder")
-    parser.add_argument('--weights_decoder', default='',
-                        help="weights to finetune net_decoder")
-    parser.add_argument('--fc_dim', default=2048, type=int,
-                        help='number of features between encoder and decoder')
-
-    # Path related arguments
-    parser.add_argument('--list_train',
-                        default='./data/training.odgt')
-    parser.add_argument('--list_val',
-                        default='./data/validation.odgt')
-    parser.add_argument('--root_dataset',
-                        default='./data/')
-
-    # optimization related arguments
-    parser.add_argument('--gpus', default='0-3',
-                        help='gpus to use, e.g. 0-3 or 0,1,2,3')
-    parser.add_argument('--batch_size_per_gpu', default=2, type=int,
-                        help='input batch size')
-    parser.add_argument('--num_epoch', default=20, type=int,
-                        help='epochs to train for')
-    parser.add_argument('--start_epoch', default=1, type=int,
-                        help='epoch to start training. useful if continue from a checkpoint')
-    parser.add_argument('--epoch_iters', default=5000, type=int,
-                        help='iterations of each epoch (irrelevant to batch size)')
-    parser.add_argument('--optim', default='SGD', help='optimizer')
-    parser.add_argument('--lr_encoder', default=2e-2, type=float, help='LR')
-    parser.add_argument('--lr_decoder', default=2e-2, type=float, help='LR')
-    parser.add_argument('--lr_pow', default=0.9, type=float,
-                        help='power in poly to drop LR')
-    parser.add_argument('--beta1', default=0.9, type=float,
-                        help='momentum for sgd, beta1 for adam')
-    parser.add_argument('--weight_decay', default=1e-4, type=float,
-                        help='weights regularizer')
-    parser.add_argument('--deep_sup_scale', default=0.4, type=float,
-                        help='the weight of deep supervision loss')
-    parser.add_argument('--fix_bn', action='store_true',
-                        help='fix bn params')
-
-    # Data related arguments
-    parser.add_argument('--num_class', default=150, type=int,
-                        help='number of classes')
-    parser.add_argument('--workers', default=16, type=int,
-                        help='number of data loading workers')
-    parser.add_argument('--imgSize', default=[300, 375, 450, 525, 600],
-                        nargs='+', type=int,
-                        help='input image size of short edge (int or list)')
-    parser.add_argument('--imgMaxSize', default=1000, type=int,
-                        help='maximum input image size of long edge')
-    parser.add_argument('--padding_constant', default=8, type=int,
-                        help='maxmimum downsampling rate of the network')
-    parser.add_argument('--segm_downsampling_rate', default=8, type=int,
-                        help='downsampling rate of the segmentation label')
-    parser.add_argument('--random_flip', default=True, type=bool,
-                        help='if horizontally flip images when training')
-
-    # Misc arguments
-    parser.add_argument('--seed', default=304, type=int, help='manual seed')
-    parser.add_argument('--ckpt', default='./ckpt',
-                        help='folder to output checkpoints')
-    parser.add_argument('--disp_iter', type=int, default=20,
-                        help='frequency to display')
-
+    parser = argparse.ArgumentParser(
+        description="PyTorch Semantic Segmentation Training"
+    )
+    parser.add_argument(
+        "--cfg",
+        default="config/ade20k-resnet50dilated-ppm_deepsup.yaml",
+        metavar="FILE",
+        help="path to config file",
+        type=str,
+    )
+    parser.add_argument(
+        "--gpus",
+        default="0-3",
+        help="gpus to use, e.g. 0-3 or 0,1,2,3"
+    )
+    parser.add_argument(
+        "opts",
+        help="Modify config options using the command-line",
+        default=None,
+        nargs=argparse.REMAINDER,
+    )
     args = parser.parse_args()
-    print("Input arguments:")
-    for key, val in vars(args).items():
-        print("{:16} {}".format(key, val))
+
+    cfg.merge_from_file(args.cfg)
+    cfg.merge_from_list(args.opts)
+    # cfg.freeze()
+
+    logger = setup_logger(distributed_rank=0)   # TODO
+    logger.info("Loaded configuration file {}".format(args.cfg))
+    logger.info("Running with config:\n{}".format(cfg))
+
+    if not os.path.isdir(cfg.DIR):
+        os.makedirs(cfg.DIR)
+    logger.info("Outputing checkpoints to: {}".format(cfg.DIR))
+    with open(os.path.join(cfg.DIR, 'config.yaml'), 'w') as f:
+        f.write("{}".format(cfg))
 
     # Parse gpu ids
-    all_gpus = parse_devices(args.gpus)
-    all_gpus = [x.replace('gpu', '') for x in all_gpus]
-    args.gpus = [int(x) for x in all_gpus]
-    num_gpus = len(args.gpus)
-    args.batch_size = num_gpus * args.batch_size_per_gpu
+    gpus = parse_devices(args.gpus)
+    gpus = [x.replace('gpu', '') for x in gpus]
+    gpus = [int(x) for x in gpus]
+    num_gpus = len(gpus)
+    cfg.TRAIN.batch_size = num_gpus * cfg.TRAIN.batch_size_per_gpu
 
-    args.max_iters = args.epoch_iters * args.num_epoch
-    args.running_lr_encoder = args.lr_encoder
-    args.running_lr_decoder = args.lr_decoder
+    cfg.TRAIN.max_iters = cfg.TRAIN.epoch_iters * cfg.TRAIN.num_epoch
+    cfg.TRAIN.running_lr_encoder = cfg.TRAIN.lr_encoder
+    cfg.TRAIN.running_lr_decoder = cfg.TRAIN.lr_decoder
 
-    args.arch_encoder = args.arch_encoder.lower()
-    args.arch_decoder = args.arch_decoder.lower()
+    random.seed(cfg.TRAIN.seed)
+    torch.manual_seed(cfg.TRAIN.seed)
 
-    # Model ID
-    args.id += '-' + args.arch_encoder
-    args.id += '-' + args.arch_decoder
-    args.id += '-ngpus' + str(num_gpus)
-    args.id += '-batchSize' + str(args.batch_size)
-    args.id += '-imgMaxSize' + str(args.imgMaxSize)
-    args.id += '-paddingConst' + str(args.padding_constant)
-    args.id += '-segmDownsampleRate' + str(args.segm_downsampling_rate)
-    args.id += '-LR_encoder' + str(args.lr_encoder)
-    args.id += '-LR_decoder' + str(args.lr_decoder)
-    args.id += '-epoch' + str(args.num_epoch)
-    if args.fix_bn:
-        args.id += '-fixBN'
-    print('Model ID: {}'.format(args.id))
-
-    args.ckpt = os.path.join(args.ckpt, args.id)
-    if not os.path.isdir(args.ckpt):
-        os.makedirs(args.ckpt)
-
-    random.seed(args.seed)
-    torch.manual_seed(args.seed)
-
-    main(args)
+    main(cfg, gpus)
