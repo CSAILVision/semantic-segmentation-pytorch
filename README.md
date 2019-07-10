@@ -20,6 +20,7 @@ https://docs.google.com/spreadsheets/d/1se8YEtb2detS7OuPE86fXGyD269pMycAWe2mtKUj
 ## Updates
 - We use configuration files to store most options which were in argument parser. The definitions of options are detailed in ```config/defaults.py```.
 
+
 ## Highlights
 
 ### Syncronized Batch Normalization on PyTorch
@@ -166,10 +167,7 @@ This script downloads a trained model (ResNet50dilated + PPM_deepsup) and a test
 
 2. To test on an image or a folder of images (```$PATH_IMG```), you can simply do the following:
 ```
-python3 -u test.py \
-  --imgs $PATH_IMG \
-  --gpu $GPU
-  --cfg $CFG \
+python3 -u test.py --imgs $PATH_IMG --gpu $GPU --cfg $CFG
 ```
 
 ## Training
