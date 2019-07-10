@@ -5,6 +5,7 @@ import lib.utils.data as torchdata
 import cv2
 from torchvision import transforms
 import numpy as np
+from scipy.misc import imresize
 
 
 class BaseDataset(torchdata.Dataset):
@@ -151,8 +152,8 @@ class TrainDataset(BaseDataset):
                     segm = cv2.flip(segm, 1)
 
             # note that each sample within a mini batch has different scale param
-            img = cv2.resize(img, (batch_resized_size[i, 1], batch_resized_size[i, 0]), interpolation=cv2.INTER_LINEAR)
-            segm = cv2.resize(segm, (batch_resized_size[i, 1], batch_resized_size[i, 0]), interpolation=cv2.INTER_NEAREST)
+            img = imresize(img, (batch_resized_size[i, 0], batch_resized_size[i, 1]), interp='bilinear')
+            segm = imresize(segm, (batch_resized_size[i, 0], batch_resized_size[i, 1]), interp='nearest')
 
             # to avoid seg label misalignment
             segm_rounded_height = self.round2nearest_multiple(segm.shape[0], self.segm_downsampling_rate)
@@ -160,11 +161,11 @@ class TrainDataset(BaseDataset):
             segm_rounded = np.zeros((segm_rounded_height, segm_rounded_width), dtype='uint8')
             segm_rounded[:segm.shape[0], :segm.shape[1]] = segm
 
-            segm = cv2.resize(
+            segm = imresize(
                 segm_rounded,
-                (segm_rounded.shape[1] // self.segm_downsampling_rate, \
-                 segm_rounded.shape[0] // self.segm_downsampling_rate), \
-                interpolation=cv2.INTER_NEAREST)
+                (segm_rounded.shape[0] // self.segm_downsampling_rate, \
+                 segm_rounded.shape[1] // self.segm_downsampling_rate), \
+                interp='nearest')
 
             # image transform
             img = self.img_transform(img)
