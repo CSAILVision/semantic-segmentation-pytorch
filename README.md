@@ -69,12 +69,12 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     <th valign="bottom">Training Time(hours)</th>
     <tr>
         <td rowspan="2">MobileNetV2dilated + C1_deepsup</td>
-        <td>No</td><td>32.39</td><td>75.75</td><td>54.07</td>
+        <td>No</td><td>34.84</td><td>75.75</td><td>54.07</td>
         <td>17.2</td>
         <td rowspan="2">0.8 * 20 = 16</td>
     </tr>
     <tr>
-        <td>Yes</td><td>33.75</td><td>76.75</td><td>55.25</td>
+        <td>Yes</td><td>33.84</td><td>76.80</td><td>55.32</td>
         <td>10.3</td>
     </tr>
     <tr>
@@ -114,7 +114,7 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td rowspan="2">1.67 * 20 = 33.4</td>
     </tr>
     <tr>
-        <td>Yes</td><td>42.04</td><td>80.23</td><td>61.14</td>
+        <td>Yes</td><td>42.14</td><td>80.13</td><td>61.14</td>
         <td>2.6</td>
     </tr>
     <tr>
@@ -153,7 +153,7 @@ The training is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB
 
 ## Environment
 The code is developed under the following configurations.
-- Hardware: 1-8 GPUs (with at least 12G GPU memories) (change ```[--gpus GPUS]``` accordingly)
+- Hardware: >=4 GPUs for training, >=1 GPU for testing (set ```[--gpus GPUS]``` accordingly)
 - Software: Ubuntu 16.04.3 LTS, ***CUDA>=8.0, Python>=3.5, PyTorch>=0.4.0***
 - Dependencies: numpy, scipy, opencv, yacs, tqdm
 
