@@ -39,7 +39,7 @@ def visualize_result(data, pred, cfg):
     for idx in np.argsort(counts)[::-1]:
         name = names[uniques[idx] + 1]
         ratio = counts[idx] / pixs * 100
-        if ratio > 1.:
+        if ratio > 0.1:
             print("  {}: {:.2f}%".format(name, ratio))
 
     # colorize prediction
@@ -137,7 +137,7 @@ if __name__ == '__main__':
         'PyTorch>=0.4.0 is required'
 
     parser = argparse.ArgumentParser(
-        description="PyTorch Semantic Segmentation Training"
+        description="PyTorch Semantic Segmentation Testing"
     )
     parser.add_argument(
         "--imgs",
