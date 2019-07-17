@@ -216,7 +216,7 @@ if __name__ == '__main__':
         cfg.DIR, 'decoder' + cfg.VAL.suffix)
 
     assert os.path.exists(cfg.MODEL.weights_encoder) and \
-        os.path.exists(cfg.MODEL.weights_encoder), "checkpoint does not exitst!"
+        os.path.exists(cfg.MODEL.weights_decoder), "checkpoint does not exitst!"
 
     if not os.path.isdir(os.path.join(cfg.DIR, "result")):
         os.makedirs(os.path.join(cfg.DIR, "result"))
