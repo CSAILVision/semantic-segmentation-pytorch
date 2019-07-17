@@ -184,7 +184,7 @@ if __name__ == '__main__':
         cfg.DIR, 'decoder' + cfg.TEST.suffix)
 
     assert os.path.exists(cfg.MODEL.weights_encoder) and \
-        os.path.exists(cfg.MODEL.weights_encoder), "checkpoint does not exitst!"
+        os.path.exists(cfg.MODEL.weights_decoder), "checkpoint does not exitst!"
 
     # generate testing image list
     if os.path.isdir(args.imgs[0]):
