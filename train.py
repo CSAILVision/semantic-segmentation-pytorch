@@ -14,7 +14,6 @@ from dataset import TrainDataset
 from models import ModelBuilder, SegmentationModule
 from utils import AverageMeter, parse_devices, setup_logger
 from lib.nn import UserScatteredDataParallel, user_scattered_collate, patch_replication_callback
-import lib.utils.data as torchdata
 
 
 # train one epoch
@@ -169,7 +168,7 @@ def main(cfg, gpus):
         cfg.DATASET,
         batch_per_gpu=cfg.TRAIN.batch_size_per_gpu)
 
-    loader_train = torchdata.DataLoader(
+    loader_train = torch.utils.data.DataLoader(
         dataset_train,
         batch_size=len(gpus),  # we have modified data_parallel
         shuffle=False,  # we do not use this param

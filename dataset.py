@@ -1,14 +1,13 @@
 import os
 import json
 import torch
-import lib.utils.data as torchdata
 import cv2
 from torchvision import transforms
 import numpy as np
 from scipy.misc import imresize
 
 
-class BaseDataset(torchdata.Dataset):
+class BaseDataset(torch.utils.data.Dataset):
     def __init__(self, odgt, opt, **kwargs):
         # parse options
         self.imgSizes = opt.imgSizes
