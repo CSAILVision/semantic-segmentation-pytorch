@@ -3,7 +3,6 @@ import sys
 import torch
 import torch.nn as nn
 import math
-from lib.nn import SynchronizedBatchNorm2d
 
 try:
     from urllib import urlretrieve
@@ -32,12 +31,12 @@ class GroupBottleneck(nn.Module):
     def __init__(self, inplanes, planes, stride=1, groups=1, downsample=None):
         super(GroupBottleneck, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
-        self.bn1 = SynchronizedBatchNorm2d(planes)
+        self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
                                padding=1, groups=groups, bias=False)
-        self.bn2 = SynchronizedBatchNorm2d(planes)
+        self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(planes, planes * 2, kernel_size=1, bias=False)
-        self.bn3 = SynchronizedBatchNorm2d(planes * 2)
+        self.bn3 = nn.BatchNorm2d(planes * 2)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
@@ -71,13 +70,13 @@ class ResNeXt(nn.Module):
         self.inplanes = 128
         super(ResNeXt, self).__init__()
         self.conv1 = conv3x3(3, 64, stride=2)
-        self.bn1 = SynchronizedBatchNorm2d(64)
+        self.bn1 = nn.BatchNorm2d(64)
         self.relu1 = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(64, 64)
-        self.bn2 = SynchronizedBatchNorm2d(64)
+        self.bn2 = nn.BatchNorm2d(64)
         self.relu2 = nn.ReLU(inplace=True)
         self.conv3 = conv3x3(64, 128)
-        self.bn3 = SynchronizedBatchNorm2d(128)
+        self.bn3 = nn.BatchNorm2d(128)
         self.relu3 = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
@@ -92,7 +91,7 @@ class ResNeXt(nn.Module):
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels // m.groups
                 m.weight.data.normal_(0, math.sqrt(2. / n))
-            elif isinstance(m, SynchronizedBatchNorm2d):
+            elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
@@ -102,7 +101,7 @@ class ResNeXt(nn.Module):
             downsample = nn.Sequential(
                 nn.Conv2d(self.inplanes, planes * block.expansion,
                           kernel_size=1, stride=stride, bias=False),
-                SynchronizedBatchNorm2d(planes * block.expansion),
+                nn.BatchNorm2d(planes * block.expansion),
             )
 
         layers = []

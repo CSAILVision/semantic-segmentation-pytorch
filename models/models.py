@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torchvision
 from . import resnet, resnext, mobilenet
-from lib.nn import SynchronizedBatchNorm2d
 
 
 class SegmentationModuleBase(nn.Module):
@@ -56,7 +55,7 @@ def conv3x3(in_planes, out_planes, stride=1, has_bias=False):
 def conv3x3_bn_relu(in_planes, out_planes, stride=1):
     return nn.Sequential(
             conv3x3(in_planes, out_planes, stride),
-            SynchronizedBatchNorm2d(out_planes),
+            nn.BatchNorm2d(out_planes),
             nn.ReLU(inplace=True),
             )
 
@@ -395,7 +394,7 @@ class PPM(nn.Module):
             self.ppm.append(nn.Sequential(
                 nn.AdaptiveAvgPool2d(scale),
                 nn.Conv2d(fc_dim, 512, kernel_size=1, bias=False),
-                SynchronizedBatchNorm2d(512),
+                nn.BatchNorm2d(512),
                 nn.ReLU(inplace=True)
             ))
         self.ppm = nn.ModuleList(self.ppm)
@@ -403,7 +402,7 @@ class PPM(nn.Module):
         self.conv_last = nn.Sequential(
             nn.Conv2d(fc_dim+len(pool_scales)*512, 512,
                       kernel_size=3, padding=1, bias=False),
-            SynchronizedBatchNorm2d(512),
+            nn.BatchNorm2d(512),
             nn.ReLU(inplace=True),
             nn.Dropout2d(0.1),
             nn.Conv2d(512, num_class, kernel_size=1)
@@ -444,7 +443,7 @@ class PPMDeepsup(nn.Module):
             self.ppm.append(nn.Sequential(
                 nn.AdaptiveAvgPool2d(scale),
                 nn.Conv2d(fc_dim, 512, kernel_size=1, bias=False),
-                SynchronizedBatchNorm2d(512),
+                nn.BatchNorm2d(512),
                 nn.ReLU(inplace=True)
             ))
         self.ppm = nn.ModuleList(self.ppm)
@@ -453,7 +452,7 @@ class PPMDeepsup(nn.Module):
         self.conv_last = nn.Sequential(
             nn.Conv2d(fc_dim+len(pool_scales)*512, 512,
                       kernel_size=3, padding=1, bias=False),
-            SynchronizedBatchNorm2d(512),
+            nn.BatchNorm2d(512),
             nn.ReLU(inplace=True),
             nn.Dropout2d(0.1),
             nn.Conv2d(512, num_class, kernel_size=1)
@@ -509,7 +508,7 @@ class UPerNet(nn.Module):
             self.ppm_pooling.append(nn.AdaptiveAvgPool2d(scale))
             self.ppm_conv.append(nn.Sequential(
                 nn.Conv2d(fc_dim, 512, kernel_size=1, bias=False),
-                SynchronizedBatchNorm2d(512),
+                nn.BatchNorm2d(512),
                 nn.ReLU(inplace=True)
             ))
         self.ppm_pooling = nn.ModuleList(self.ppm_pooling)
@@ -521,7 +520,7 @@ class UPerNet(nn.Module):
         for fpn_inplane in fpn_inplanes[:-1]: # skip the top layer
             self.fpn_in.append(nn.Sequential(
                 nn.Conv2d(fpn_inplane, fpn_dim, kernel_size=1, bias=False),
-                SynchronizedBatchNorm2d(fpn_dim),
+                nn.BatchNorm2d(fpn_dim),
                 nn.ReLU(inplace=True)
             ))
         self.fpn_in = nn.ModuleList(self.fpn_in)
