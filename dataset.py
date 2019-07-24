@@ -1,14 +1,21 @@
 import os
 import json
 import torch
-import lib.utils.data as torchdata
+import math
+import random
+# import lib.utils.data as torchdata
 import cv2
 from torchvision import transforms
 import numpy as np
 from scipy.misc import imresize
 
 
-class BaseDataset(torchdata.Dataset):
+def user_collate_fn(batch):
+    assert(len(batch) == 1)
+    return batch[0]
+
+
+class BaseDataset(torch.utils.data.Dataset):
     def __init__(self, odgt, opt, **kwargs):
         # parse options
         self.imgSizes = opt.imgSizes
@@ -24,20 +31,24 @@ class BaseDataset(torchdata.Dataset):
             mean=[102.9801, 115.9465, 122.7717],
             std=[1., 1., 1.])
 
-    def parse_input_list(self, odgt, max_sample=-1, start_idx=-1, end_idx=-1):
+    def parse_input_list(self, odgt, world_size=1, rank=0, start_idx=-1, end_idx=-1):
         if isinstance(odgt, list):
             self.list_sample = odgt
         elif isinstance(odgt, str):
             self.list_sample = [json.loads(x.rstrip()) for x in open(odgt, 'r')]
 
-        if max_sample > 0:
-            self.list_sample = self.list_sample[0:max_sample]
-        if start_idx >= 0 and end_idx >= 0:     # divide file list
-            self.list_sample = self.list_sample[start_idx:end_idx]
+        num_total = len(self.list_sample)
+        if world_size > 1:
+            self.num_sample = int(math.ceil(num_total * 1.0 / world_size))
+            self.start_idx = rank * self.num_sample
+            self.end_idx = min(self.start_idx + self.num_sample, num_total)
+        else:
+            self.start_idx = 0
+            self.end_idx = num_total
 
-        self.num_sample = len(self.list_sample)
-        assert self.num_sample > 0
-        print('# samples: {}'.format(self.num_sample))
+        # assert self.num_sample > 0
+        print('Dataset Samples #total: {}, #process [{}]: {}-{}'
+              .format(num_total, rank, self.start_idx, self.end_idx))
 
     def img_transform(self, img):
         # image to float
@@ -64,8 +75,11 @@ class TrainDataset(BaseDataset):
         self.batch_record_list = [[], []]
 
         # override dataset length when trainig with batch_per_gpu > 1
-        self.cur_idx = 0
-        self.if_shuffled = False
+        self.cur_idx = self.start_idx
+        # self.if_shuffled = False
+
+    def shuffle(self, seed):
+        random.Random(seed).shuffle(self.list_sample)
 
     def _get_sub_batch(self):
         while True:
@@ -78,9 +92,9 @@ class TrainDataset(BaseDataset):
 
             # update current sample pointer
             self.cur_idx += 1
-            if self.cur_idx >= self.num_sample:
-                self.cur_idx = 0
-                np.random.shuffle(self.list_sample)
+            if self.cur_idx >= self.end_idx:
+                self.cur_idx = self.start_idx
+                # np.random.shuffle(self.list_sample)
 
             if len(self.batch_record_list[0]) == self.batch_per_gpu:
                 batch_records = self.batch_record_list[0]
@@ -94,9 +108,9 @@ class TrainDataset(BaseDataset):
 
     def __getitem__(self, index):
         # NOTE: random shuffle for the first time. shuffle in __init__ is useless
-        if not self.if_shuffled:
-            np.random.shuffle(self.list_sample)
-            self.if_shuffled = True
+        # if not self.if_shuffled:
+        #     np.random.shuffle(self.list_sample)
+        #     self.if_shuffled = True
 
         # get sub-batch candidates
         batch_records = self._get_sub_batch()
@@ -173,14 +187,15 @@ class TrainDataset(BaseDataset):
             batch_images[i][:, :img.shape[1], :img.shape[2]] = img
             batch_segms[i][:segm.shape[0], :segm.shape[1]] = torch.from_numpy(segm.astype(np.int)).long()
 
-        batch_segms = batch_segms - 1 # label from -1 to 149
+        batch_segms = batch_segms - 1   # label from -1 to 149 for ADE
         output = dict()
         output['img_data'] = batch_images
         output['seg_label'] = batch_segms
         return output
 
     def __len__(self):
-        return int(1e10) # It's a fake length due to the trick that every loader maintains its own list
+        return self.num_sample
+        # return int(1e10) # It's a fake length due to the trick that every loader maintains its own list
         #return self.num_sampleclass
 
 

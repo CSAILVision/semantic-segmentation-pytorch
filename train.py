@@ -8,17 +8,18 @@ from distutils.version import LooseVersion
 # Numerical libs
 import torch
 import torch.nn as nn
+import torch.multiprocessing as mp
+import torch.distributed as dist
+import torch.utils.data.distributed
 # Our libs
 from config import cfg
-from dataset import TrainDataset
+from dataset import TrainDataset, user_collate_fn
 from models import ModelBuilder, SegmentationModule
 from utils import AverageMeter, parse_devices, setup_logger
-from lib.nn import UserScatteredDataParallel, user_scattered_collate, patch_replication_callback
-import lib.utils.data as torchdata
 
 
 # train one epoch
-def train(segmentation_module, iterator, optimizers, history, epoch, cfg):
+def train(segmentation_module, loader, optimizers, history, epoch, cfg):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     ave_total_loss = AverageMeter()
@@ -28,10 +29,15 @@ def train(segmentation_module, iterator, optimizers, history, epoch, cfg):
 
     # main loop
     tic = time.time()
+    iterator = iter(loader)
     for i in range(cfg.TRAIN.epoch_iters):
+        # set learning rate
+        cur_iter = i + (epoch - 1) * cfg.TRAIN.epoch_iters
+        adjust_learning_rate(optimizers, cur_iter, cfg)
+
+        # load data
         batch_data = next(iterator)
         data_time.update(time.time() - tic)
-
         segmentation_module.zero_grad()
 
         # forward pass
@@ -67,10 +73,6 @@ def train(segmentation_module, iterator, optimizers, history, epoch, cfg):
             history['train']['loss'].append(loss.data.item())
             history['train']['acc'].append(acc.data.item())
 
-        # adjust learning rate
-        cur_iter = i + (epoch - 1) * cfg.TRAIN.epoch_iters
-        adjust_learning_rate(optimizers, cur_iter, cfg)
-
 
 def checkpoint(nets, history, cfg, epoch_num):
     print('Saving checkpoints...')
@@ -84,10 +86,10 @@ def checkpoint(nets, history, cfg, epoch_num):
         '{}/history_epoch_{}.pth'.format(cfg.DIR, epoch_num))
     torch.save(
         dict_encoder,
-       '{}/encoder_epoch_{}.pth'.format(cfg.DIR, epoch_num))
+        '{}/encoder_epoch_{}.pth'.format(cfg.DIR, epoch_num))
     torch.save(
         dict_decoder,
-       '{}/decoder_epoch_{}.pth'.format(cfg.DIR, epoch_num))
+        '{}/decoder_epoch_{}.pth'.format(cfg.DIR, epoch_num))
 
 
 def group_weight(module):
@@ -140,7 +142,15 @@ def adjust_learning_rate(optimizers, cur_iter, cfg):
         param_group['lr'] = cfg.TRAIN.running_lr_decoder
 
 
-def main(cfg, gpus):
+def main_worker(rank, cfg, rank2gpu):
+    # Param setup
+    num_gpus = len(rank2gpu.keys())
+    gpu = rank2gpu[rank]
+    print("Launch GPU: {} for training".format(gpu))
+    dist.init_process_group(
+        backend='nccl', init_method='tcp://127.0.0.1:1234',
+        world_size=num_gpus, rank=rank)
+
     # Network Builders
     builder = ModelBuilder()
     net_encoder = builder.build_encoder(
@@ -161,35 +171,27 @@ def main(cfg, gpus):
     else:
         segmentation_module = SegmentationModule(
             net_encoder, net_decoder, crit)
+    segmentation_module = torch.nn.SyncBatchNorm.convert_sync_batchnorm(segmentation_module)
+
+    torch.cuda.set_device(gpu)
+    segmentation_module.cuda(gpu)
+    segmentation_module = torch.nn.parallel.DistributedDataParallel(segmentation_module, device_ids=[gpu])
 
     # Dataset and Loader
     dataset_train = TrainDataset(
         cfg.DATASET.root_dataset,
         cfg.DATASET.list_train,
         cfg.DATASET,
-        batch_per_gpu=cfg.TRAIN.batch_size_per_gpu)
+        batch_per_gpu=cfg.TRAIN.batch_size_per_gpu,
+        world_size=num_gpus, rank=rank)
 
-    loader_train = torchdata.DataLoader(
+    loader_train = torch.utils.data.DataLoader(
         dataset_train,
-        batch_size=len(gpus),  # we have modified data_parallel
-        shuffle=False,  # we do not use this param
-        collate_fn=user_scattered_collate,
-        num_workers=cfg.TRAIN.workers,
-        drop_last=True,
+        batch_size=1,   # modified: each batch is a dict of multiple samples
+        collate_fn=user_collate_fn,
+        num_workers=cfg.TRAIN.workers // num_gpus,
+        drop_last=False,
         pin_memory=True)
-    print('1 Epoch = {} iters'.format(cfg.TRAIN.epoch_iters))
-
-    # create loader iterator
-    iterator_train = iter(loader_train)
-
-    # load nets into gpu
-    if len(gpus) > 1:
-        segmentation_module = UserScatteredDataParallel(
-            segmentation_module,
-            device_ids=gpus)
-        # For sync bn
-        patch_replication_callback(segmentation_module)
-    segmentation_module.cuda()
 
     # Set up optimizers
     nets = (net_encoder, net_decoder, crit)
@@ -198,11 +200,20 @@ def main(cfg, gpus):
     # Main loop
     history = {'train': {'epoch': [], 'loss': [], 'acc': []}}
 
+    cfg.TRAIN.epoch_iters = len(dataset_train) // cfg.TRAIN.batch_size_per_gpu
+    cfg.TRAIN.max_iters = cfg.TRAIN.epoch_iters * cfg.TRAIN.num_epoch
     for epoch in range(cfg.TRAIN.start_epoch, cfg.TRAIN.num_epoch):
-        train(segmentation_module, iterator_train, optimizers, history, epoch+1, cfg)
+        # deterministic data shuffling
+        dataset_train.shuffle(epoch)
+
+        # train one epoch
+        train(segmentation_module, loader_train, optimizers, history, epoch+1, cfg)
 
         # checkpointing
-        checkpoint(nets, history, cfg, epoch+1)
+        if rank == 0:
+            if ((epoch+1) % cfg.TRAIN.save_freq == 0) \
+                    or ((epoch+1) == cfg.TRAIN.num_epoch):
+                checkpoint(nets, history, cfg, epoch+1)
 
     print('Training Done!')
 
@@ -220,6 +231,12 @@ if __name__ == '__main__':
         metavar="FILE",
         help="path to config file",
         type=str,
+    )
+    parser.add_argument(
+        "--distributed",
+        default=1,
+        type=int,
+        help="using multiprocessing distributed training"
     )
     parser.add_argument(
         "--gpus",
@@ -255,11 +272,9 @@ if __name__ == '__main__':
     num_gpus = len(gpus)
     cfg.TRAIN.batch_size = num_gpus * cfg.TRAIN.batch_size_per_gpu
 
-    cfg.TRAIN.max_iters = cfg.TRAIN.epoch_iters * cfg.TRAIN.num_epoch
-    cfg.TRAIN.running_lr_encoder = cfg.TRAIN.lr_encoder
-    cfg.TRAIN.running_lr_decoder = cfg.TRAIN.lr_decoder
-
     random.seed(cfg.TRAIN.seed)
     torch.manual_seed(cfg.TRAIN.seed)
 
-    main(cfg, gpus)
+    rank2gpu = {i: gpus[i] for i in range(num_gpus)}
+    mp.spawn(main_worker, nprocs=num_gpus, args=(cfg, rank2gpu))
+    # main_worker(cfg, gpus)
