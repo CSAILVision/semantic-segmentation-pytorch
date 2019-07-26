@@ -4,8 +4,25 @@ import torch
 import cv2
 from torchvision import transforms
 import numpy as np
-from scipy.misc import imresize
+import PIL
+from scipy.misc import imresize as scipyimresize
 
+
+def imresize(im, size, interp='bilinear'):
+    if interp == 'nearest':
+        resample = PIL.Image.NEAREST
+    elif interp == 'bilinear':
+        resample = PIL.Image.BILINEAR
+    elif interp == 'bicubic':
+        resample = PIL.Image.BICUBIC
+    else:
+        raise Exception('resample method undefined!')
+
+    im_scipy = scipyimresize(im, size, interp)
+    im_pil = np.array(PIL.Image.fromarray(im).resize((size[1], size[0]), resample))
+    if np.abs(im_scipy - im_pil).any():
+        print("resizing leads to different result!")
+    return im_pil
 
 class BaseDataset(torch.utils.data.Dataset):
     def __init__(self, odgt, opt, **kwargs):
