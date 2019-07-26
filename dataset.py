@@ -1,6 +1,7 @@
 import os
 import json
 import torch
+import lib.utils.data as torchdata
 import cv2
 from torchvision import transforms
 import numpy as np
@@ -24,7 +25,7 @@ def imresize(im, size, interp='bilinear'):
         print("resizing leads to different result!")
     return im_pil
 
-class BaseDataset(torch.utils.data.Dataset):
+class BaseDataset(torchdata.Dataset):
     def __init__(self, odgt, opt, **kwargs):
         # parse options
         self.imgSizes = opt.imgSizes

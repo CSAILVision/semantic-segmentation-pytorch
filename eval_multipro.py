@@ -16,6 +16,7 @@ from models import ModelBuilder, SegmentationModule
 from utils import AverageMeter, colorEncode, accuracy, intersectionAndUnion, parse_devices, setup_logger
 from lib.nn import user_scattered_collate, async_copy_to
 from lib.utils import as_numpy
+import lib.utils.data as torchdata
 import cv2
 from tqdm import tqdm
 
@@ -93,7 +94,7 @@ def worker(cfg, gpu_id, start_idx, end_idx, result_queue):
         cfg.DATASET.list_val,
         cfg.DATASET,
         start_idx=start_idx, end_idx=end_idx)
-    loader_val = torch.utils.data.DataLoader(
+    loader_val = torchdata.DataLoader(
         dataset_val,
         batch_size=cfg.VAL.batch_size,
         shuffle=False,
