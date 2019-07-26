@@ -6,7 +6,6 @@ import cv2
 from torchvision import transforms
 import numpy as np
 import PIL
-from scipy.misc import imresize as scipyimresize
 
 
 def imresize(im, size, interp='bilinear'):
@@ -19,11 +18,10 @@ def imresize(im, size, interp='bilinear'):
     else:
         raise Exception('resample method undefined!')
 
-    im_scipy = scipyimresize(im, size, interp)
-    im_pil = np.array(PIL.Image.fromarray(im).resize((size[1], size[0]), resample))
-    if np.abs(im_scipy - im_pil).any():
-        print("resizing leads to different result!")
-    return im_pil
+    return np.array(
+        PIL.Image.fromarray(im).resize((size[1], size[0]), resample)
+    )
+
 
 class BaseDataset(torchdata.Dataset):
     def __init__(self, odgt, opt, **kwargs):
