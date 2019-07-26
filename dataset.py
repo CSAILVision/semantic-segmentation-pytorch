@@ -1,13 +1,29 @@
 import os
 import json
 import torch
+import lib.utils.data as torchdata
 import cv2
 from torchvision import transforms
 import numpy as np
-from scipy.misc import imresize
+import PIL
 
 
-class BaseDataset(torch.utils.data.Dataset):
+def imresize(im, size, interp='bilinear'):
+    if interp == 'nearest':
+        resample = PIL.Image.NEAREST
+    elif interp == 'bilinear':
+        resample = PIL.Image.BILINEAR
+    elif interp == 'bicubic':
+        resample = PIL.Image.BICUBIC
+    else:
+        raise Exception('resample method undefined!')
+
+    return np.array(
+        PIL.Image.fromarray(im).resize((size[1], size[0]), resample)
+    )
+
+
+class BaseDataset(torchdata.Dataset):
     def __init__(self, odgt, opt, **kwargs):
         # parse options
         self.imgSizes = opt.imgSizes
