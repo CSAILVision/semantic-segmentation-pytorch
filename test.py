@@ -14,7 +14,6 @@ from models import ModelBuilder, SegmentationModule
 from utils import colorEncode, find_recursive, setup_logger
 from lib.nn import user_scattered_collate, async_copy_to
 from lib.utils import as_numpy
-import lib.utils.data as torchdata
 import cv2
 from tqdm import tqdm
 from config import cfg
@@ -116,7 +115,7 @@ def main(cfg, gpu):
     dataset_test = TestDataset(
         cfg.list_test,
         cfg.DATASET)
-    loader_test = torchdata.DataLoader(
+    loader_test = torch.utils.data.DataLoader(
         dataset_test,
         batch_size=cfg.TEST.batch_size,
         shuffle=False,
@@ -179,9 +178,9 @@ if __name__ == '__main__':
 
     # absolute paths of model weights
     cfg.MODEL.weights_encoder = os.path.join(
-        cfg.DIR, 'encoder' + cfg.TEST.suffix)
+        cfg.DIR, 'encoder_' + cfg.TEST.checkpoint)
     cfg.MODEL.weights_decoder = os.path.join(
-        cfg.DIR, 'decoder' + cfg.TEST.suffix)
+        cfg.DIR, 'decoder_' + cfg.TEST.checkpoint)
 
     assert os.path.exists(cfg.MODEL.weights_encoder) and \
         os.path.exists(cfg.MODEL.weights_decoder), "checkpoint does not exitst!"

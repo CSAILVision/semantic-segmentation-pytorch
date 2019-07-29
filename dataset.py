@@ -1,7 +1,6 @@
 import os
 import json
 import torch
-import lib.utils.data as torchdata
 import cv2
 from torchvision import transforms
 import numpy as np
@@ -23,7 +22,7 @@ def imresize(im, size, interp='bilinear'):
     )
 
 
-class BaseDataset(torchdata.Dataset):
+class BaseDataset(torch.utils.data.Dataset):
     def __init__(self, odgt, opt, **kwargs):
         # parse options
         self.imgSizes = opt.imgSizes
@@ -110,6 +109,7 @@ class TrainDataset(BaseDataset):
     def __getitem__(self, index):
         # NOTE: random shuffle for the first time. shuffle in __init__ is useless
         if not self.if_shuffled:
+            np.random.seed(index)
             np.random.shuffle(self.list_sample)
             self.if_shuffled = True
 

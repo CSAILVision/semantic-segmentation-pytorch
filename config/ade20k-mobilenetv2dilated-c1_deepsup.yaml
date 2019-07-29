@@ -12,12 +12,10 @@ DATASET:
 MODEL:
   arch_encoder: "mobilenetv2dilated"
   arch_decoder: "c1_deepsup"
-  weights_encoder: ""
-  weights_decoder: ""
   fc_dim: 320
 
 TRAIN:
-  batch_size_per_gpu: 2
+  batch_size_per_gpu: 3
   num_epoch: 20
   start_epoch: 0
   epoch_iters: 5000
@@ -35,10 +33,10 @@ TRAIN:
 
 VAL:
   visualize: False
-  suffix: "_epoch_20.pth"
+  checkpoint: "epoch_20.pth"
 
 TEST:
-  suffix: "_epoch_20.pth"
+  checkpoint: "epoch_20.pth"
   result: "./"
 
 DIR: "ckpt/ade20k-mobilenetv2dilated-c1_deepsup"
