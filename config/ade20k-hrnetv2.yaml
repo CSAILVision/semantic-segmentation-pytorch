@@ -10,13 +10,13 @@ DATASET:
   random_flip: True
 
 MODEL:
-  arch_encoder: "resnet101"
-  arch_decoder: "upernet"
-  fc_dim: 2048
+  arch_encoder: "hrnetv2"
+  arch_decoder: "c1"
+  fc_dim: 720
 
 TRAIN:
   batch_size_per_gpu: 2
-  num_epoch: 40
+  num_epoch: 20
   start_epoch: 0
   epoch_iters: 5000
   optim: "SGD"
@@ -33,10 +33,10 @@ TRAIN:
 
 VAL:
   visualize: False
-  checkpoint: "epoch_40.pth"
+  checkpoint: "epoch_20.pth"
 
 TEST:
-  checkpoint: "epoch_40.pth"
+  checkpoint: "epoch_20.pth"
   result: "./"
 
-DIR: "ckpt/ade20k-resnet101-upernet"
+DIR: "ckpt/ade20k-hrnetv2-c1"

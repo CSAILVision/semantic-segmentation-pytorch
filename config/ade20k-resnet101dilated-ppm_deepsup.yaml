@@ -12,8 +12,6 @@ DATASET:
 MODEL:
   arch_encoder: "resnet50dilated"
   arch_decoder: "ppm_deepsup"
-  weights_encoder: ""
-  weights_decoder: ""
   fc_dim: 2048
 
 TRAIN:
@@ -35,10 +33,10 @@ TRAIN:
 
 VAL:
   visualize: False
-  suffix: "_epoch_20.pth"
+  checkpoint: "epoch_20.pth"
 
 TEST:
-  suffix: "_epoch_20.pth"
+  checkpoint: "epoch_20.pth"
   result: "./"
 
 DIR: "ckpt/ade20k-resnet50dilated-ppm_deepsup"

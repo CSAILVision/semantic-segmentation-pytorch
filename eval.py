@@ -15,7 +15,6 @@ from models import ModelBuilder, SegmentationModule
 from utils import AverageMeter, colorEncode, accuracy, intersectionAndUnion, setup_logger
 from lib.nn import user_scattered_collate, async_copy_to
 from lib.utils import as_numpy
-import lib.utils.data as torchdata
 import cv2
 from tqdm import tqdm
 
@@ -112,12 +111,11 @@ def main(cfg, gpu):
     torch.cuda.set_device(gpu)
 
     # Network Builders
-    builder = ModelBuilder()
-    net_encoder = builder.build_encoder(
+    net_encoder = ModelBuilder.build_encoder(
         arch=cfg.MODEL.arch_encoder.lower(),
         fc_dim=cfg.MODEL.fc_dim,
         weights=cfg.MODEL.weights_encoder)
-    net_decoder = builder.build_decoder(
+    net_decoder = ModelBuilder.build_decoder(
         arch=cfg.MODEL.arch_decoder.lower(),
         fc_dim=cfg.MODEL.fc_dim,
         num_class=cfg.DATASET.num_class,
@@ -133,7 +131,7 @@ def main(cfg, gpu):
         cfg.DATASET.root_dataset,
         cfg.DATASET.list_val,
         cfg.DATASET)
-    loader_val = torchdata.DataLoader(
+    loader_val = torch.utils.data.DataLoader(
         dataset_val,
         batch_size=cfg.VAL.batch_size,
         shuffle=False,
@@ -186,10 +184,9 @@ if __name__ == '__main__':
 
     # absolute paths of model weights
     cfg.MODEL.weights_encoder = os.path.join(
-        cfg.DIR, 'encoder' + cfg.VAL.suffix)
+        cfg.DIR, 'encoder_' + cfg.VAL.checkpoint)
     cfg.MODEL.weights_decoder = os.path.join(
-        cfg.DIR, 'decoder' + cfg.VAL.suffix)
-
+        cfg.DIR, 'decoder_' + cfg.VAL.checkpoint)
     assert os.path.exists(cfg.MODEL.weights_encoder) and \
         os.path.exists(cfg.MODEL.weights_decoder), "checkpoint does not exitst!"
 

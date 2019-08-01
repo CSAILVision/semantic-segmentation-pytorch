@@ -14,7 +14,6 @@ from dataset import TrainDataset
 from models import ModelBuilder, SegmentationModule
 from utils import AverageMeter, parse_devices, setup_logger
 from lib.nn import UserScatteredDataParallel, user_scattered_collate, patch_replication_callback
-import lib.utils.data as torchdata
 
 
 # train one epoch
@@ -29,10 +28,14 @@ def train(segmentation_module, iterator, optimizers, history, epoch, cfg):
     # main loop
     tic = time.time()
     for i in range(cfg.TRAIN.epoch_iters):
+        # load a batch of data
         batch_data = next(iterator)
         data_time.update(time.time() - tic)
-
         segmentation_module.zero_grad()
+
+        # adjust learning rate
+        cur_iter = i + (epoch - 1) * cfg.TRAIN.epoch_iters
+        adjust_learning_rate(optimizers, cur_iter, cfg)
 
         # forward pass
         loss, acc = segmentation_module(batch_data)
@@ -67,12 +70,8 @@ def train(segmentation_module, iterator, optimizers, history, epoch, cfg):
             history['train']['loss'].append(loss.data.item())
             history['train']['acc'].append(acc.data.item())
 
-        # adjust learning rate
-        cur_iter = i + (epoch - 1) * cfg.TRAIN.epoch_iters
-        adjust_learning_rate(optimizers, cur_iter, cfg)
 
-
-def checkpoint(nets, history, cfg, epoch_num):
+def checkpoint(nets, history, cfg, epoch):
     print('Saving checkpoints...')
     (net_encoder, net_decoder, crit) = nets
 
@@ -81,13 +80,13 @@ def checkpoint(nets, history, cfg, epoch_num):
 
     torch.save(
         history,
-        '{}/history_epoch_{}.pth'.format(cfg.DIR, epoch_num))
+        '{}/history_epoch_{}.pth'.format(cfg.DIR, epoch))
     torch.save(
         dict_encoder,
-       '{}/encoder_epoch_{}.pth'.format(cfg.DIR, epoch_num))
+        '{}/encoder_epoch_{}.pth'.format(cfg.DIR, epoch))
     torch.save(
         dict_decoder,
-       '{}/decoder_epoch_{}.pth'.format(cfg.DIR, epoch_num))
+        '{}/decoder_epoch_{}.pth'.format(cfg.DIR, epoch))
 
 
 def group_weight(module):
@@ -142,12 +141,11 @@ def adjust_learning_rate(optimizers, cur_iter, cfg):
 
 def main(cfg, gpus):
     # Network Builders
-    builder = ModelBuilder()
-    net_encoder = builder.build_encoder(
+    net_encoder = ModelBuilder.build_encoder(
         arch=cfg.MODEL.arch_encoder.lower(),
         fc_dim=cfg.MODEL.fc_dim,
         weights=cfg.MODEL.weights_encoder)
-    net_decoder = builder.build_decoder(
+    net_decoder = ModelBuilder.build_decoder(
         arch=cfg.MODEL.arch_decoder.lower(),
         fc_dim=cfg.MODEL.fc_dim,
         num_class=cfg.DATASET.num_class,
@@ -169,7 +167,7 @@ def main(cfg, gpus):
         cfg.DATASET,
         batch_per_gpu=cfg.TRAIN.batch_size_per_gpu)
 
-    loader_train = torchdata.DataLoader(
+    loader_train = torch.utils.data.DataLoader(
         dataset_train,
         batch_size=len(gpus),  # we have modified data_parallel
         shuffle=False,  # we do not use this param
@@ -242,11 +240,21 @@ if __name__ == '__main__':
     logger.info("Loaded configuration file {}".format(args.cfg))
     logger.info("Running with config:\n{}".format(cfg))
 
+    # Output directory
     if not os.path.isdir(cfg.DIR):
         os.makedirs(cfg.DIR)
     logger.info("Outputing checkpoints to: {}".format(cfg.DIR))
     with open(os.path.join(cfg.DIR, 'config.yaml'), 'w') as f:
         f.write("{}".format(cfg))
+
+    # Start from checkpoint
+    if cfg.TRAIN.start_epoch > 0:
+        cfg.MODEL.weights_encoder = os.path.join(
+            cfg.DIR, 'encoder_epoch_{}.pth'.format(cfg.TRAIN.start_epoch))
+        cfg.MODEL.weights_decoder = os.path.join(
+            cfg.DIR, 'decoder_epoch_{}.pth'.format(cfg.TRAIN.start_epoch))
+        assert os.path.exists(cfg.MODEL.weights_encoder) and \
+            os.path.exists(cfg.MODEL.weights_decoder), "checkpoint does not exitst!"
 
     # Parse gpu ids
     gpus = parse_devices(args.gpus)

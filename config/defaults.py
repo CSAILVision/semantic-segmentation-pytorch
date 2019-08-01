@@ -49,7 +49,7 @@ _C.TRAIN.batch_size_per_gpu = 2
 # epochs to train for
 _C.TRAIN.num_epoch = 20
 # epoch to start training. useful if continue from a checkpoint
-_C.TRAIN.start_epoch = 1
+_C.TRAIN.start_epoch = 0
 # iterations of each epoch (irrelevant to batch size)
 _C.TRAIN.epoch_iters = 5000
 
@@ -83,7 +83,7 @@ _C.VAL.batch_size = 1
 # output visualization during validation
 _C.VAL.visualize = False
 # the checkpoint to evaluate on
-_C.VAL.suffix = "_epoch_20.pth"
+_C.VAL.checkpoint = "epoch_20.pth"
 
 # -----------------------------------------------------------------------------
 # Testing
@@ -92,6 +92,6 @@ _C.TEST = CN()
 # currently only supports 1
 _C.TEST.batch_size = 1
 # the checkpoint to test on
-_C.TEST.suffix = "_epoch_20.pth"
+_C.TEST.checkpoint = "epoch_20.pth"
 # folder to output visualization results
 _C.TEST.result = "./"
