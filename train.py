@@ -28,9 +28,14 @@ def train(segmentation_module, iterator, optimizers, history, epoch, cfg):
     # main loop
     tic = time.time()
     for i in range(cfg.TRAIN.epoch_iters):
+        # load a batch of data
         batch_data = next(iterator)
         data_time.update(time.time() - tic)
         segmentation_module.zero_grad()
+
+        # adjust learning rate
+        cur_iter = i + (epoch - 1) * cfg.TRAIN.epoch_iters
+        adjust_learning_rate(optimizers, cur_iter, cfg)
 
         # forward pass
         loss, acc = segmentation_module(batch_data)
@@ -64,10 +69,6 @@ def train(segmentation_module, iterator, optimizers, history, epoch, cfg):
             history['train']['epoch'].append(fractional_epoch)
             history['train']['loss'].append(loss.data.item())
             history['train']['acc'].append(acc.data.item())
-
-        # adjust learning rate
-        cur_iter = i + (epoch - 1) * cfg.TRAIN.epoch_iters
-        adjust_learning_rate(optimizers, cur_iter, cfg)
 
 
 def checkpoint(nets, history, cfg, epoch):
