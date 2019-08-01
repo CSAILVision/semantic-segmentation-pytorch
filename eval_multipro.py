@@ -101,12 +101,11 @@ def worker(cfg, gpu_id, start_idx, end_idx, result_queue):
         num_workers=2)
 
     # Network Builders
-    builder = ModelBuilder()
-    net_encoder = builder.build_encoder(
+    net_encoder = ModelBuilder.build_encoder(
         arch=cfg.MODEL.arch_encoder.lower(),
         fc_dim=cfg.MODEL.fc_dim,
         weights=cfg.MODEL.weights_encoder)
-    net_decoder = builder.build_decoder(
+    net_decoder = ModelBuilder.build_decoder(
         arch=cfg.MODEL.arch_decoder.lower(),
         fc_dim=cfg.MODEL.fc_dim,
         num_class=cfg.DATASET.num_class,
