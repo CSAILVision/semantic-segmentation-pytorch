@@ -43,16 +43,17 @@ For the task of semantic segmentation, it is good to keep aspect ratio of images
 
 
 ## Supported models
-We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling.
+We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling. We have provided some pre-configured models in the ```config``` folder.
 
 Encoder:
 - MobileNetV2dilated
-- ResNet18dilated
-- ResNet50dilated
-- ResNet101dilated
+- ResNet18/ResNet18dilated
+- ResNet50/ResNet50dilated
+- ResNet101/ResNet101dilated
+- HRNet (HRNetV2-W48)
 
 Decoder:
-- C1 (1 convolution module)
+- C1 (one convolution module)
 - C1_deepsup (C1 + deep supervision trick)
 - PPM (Pyramid Pooling Module, see [PSPNet](https://hszhao.github.io/projects/pspnet) paper for details.)
 - PPM_deepsup (PPM + deep supervision trick)
@@ -68,7 +69,6 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     <th valign="bottom">Pixel Accuracy(%)</th>
     <th valign="bottom">Overall Score</th>
     <th valign="bottom">Inference Speed(fps)</th>
-    <th valign="bottom">Training Time(hours)</th>
     <tr>
         <td rowspan="2">MobileNetV2dilated + C1_deepsup</td>
         <td>No</td><td>34.84</td><td>75.75</td><td>54.07</td>
@@ -83,7 +83,6 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td rowspan="2">MobileNetV2dilated + PPM_deepsup</td>
         <td>No</td><td>35.76</td><td>77.77</td><td>56.27</td>
         <td>14.9</td>
-        <td rowspan="2">0.9 * 20 = 18.0</td>
     </tr>
     <tr>
         <td>Yes</td><td>36.28</td><td>78.26</td><td>57.27</td>
@@ -93,7 +92,6 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td rowspan="2">ResNet18dilated + C1_deepsup</td>
         <td>No</td><td>33.82</td><td>76.05</td><td>54.94</td>
         <td>13.9</td>
-        <td rowspan="2">0.42 * 20 = 8.4</td>
     </tr>
     <tr>
         <td>Yes</td><td>35.34</td><td>77.41</td><td>56.38</td>
@@ -103,7 +101,6 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td rowspan="2">ResNet18dilated + PPM_deepsup</td>
         <td>No</td><td>38.00</td><td>78.64</td><td>58.32</td>
         <td>11.7</td>
-        <td rowspan="2">1.1 * 20 = 22.0</td>
     </tr>
     <tr>
         <td>Yes</td><td>38.81</td><td>79.29</td><td>59.05</td>
@@ -113,7 +110,6 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td rowspan="2">ResNet50dilated + PPM_deepsup</td>
         <td>No</td><td>41.26</td><td>79.73</td><td>60.50</td>
         <td>8.3</td>
-        <td rowspan="2">1.67 * 20 = 33.4</td>
     </tr>
     <tr>
         <td>Yes</td><td>42.14</td><td>80.13</td><td>61.14</td>
@@ -123,35 +119,42 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td rowspan="2">ResNet101dilated + PPM_deepsup</td>
         <td>No</td><td>42.19</td><td>80.59</td><td>61.39</td>
         <td>6.8</td>
-        <td rowspan="2">3.82 * 25 = 95.5</td>
     </tr>
     <tr>
         <td>Yes</td><td>42.53</td><td>80.91</td><td>61.72</td>
         <td>2.0</td>
     </tr>
     <tr>
-        <td rowspan="2"><b>UperNet50</b></td>
+        <td rowspan="2">UperNet50</td>
         <td>No</td><td>40.44</td><td>79.80</td><td>60.12</td>
         <td>8.4</td>
-        <td rowspan="2">1.75 * 20 = 35.0</td>
     </tr>
     <tr>
         <td>Yes</td><td>41.55</td><td>80.23</td><td>60.89</td>
         <td>2.9</td>
     </tr>
     <tr>
-        <td rowspan="2"><b>UperNet101</b></td>
+        <td rowspan="2">UperNet101</td>
         <td>No</td><td>42.00</td><td>80.79</td><td>61.40</td>
         <td>7.8</td>
-        <td rowspan="2">2.5 * 25 = 62.5</td>
     </tr>
     <tr>
         <td>Yes</td><td>42.66</td><td>81.01</td><td>61.84</td>
         <td>2.3</td>
     </tr>
+    <tr>
+        <td rowspan="2">HRNetV2-W48</td>
+        <td>No</td><td>41.74</td><td>80.59</td><td>61.17</td>
+        <td>5.8</td>
+    </tr>
+    <tr>
+        <td>Yes</td><td>42.99</td><td>81.25</td><td>62.12</td>
+        <td>1.9</td>
+    </tr>
+
 </tbody></table>
 
-The training is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GPU memory), ***except for*** ResNet101dilated, which is benchmarked on a server with 8 NVIDIA Tesla P40 GPUS (22GB GPU memory), because of the insufficient memory issue when using dilated conv on a very deep network. The inference speed is benchmarked a single NVIDIA Pascal Titan Xp GPU, without visualization.
+The training is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GPU memory), the inference speed is benchmarked a single NVIDIA Pascal Titan Xp GPU, without visualization.
 
 ## Environment
 The code is developed under the following configurations.
