@@ -10,7 +10,7 @@ DATASET:
   random_flip: True
 
 MODEL:
-  arch_encoder: "resnet101"
+  arch_encoder: "resnet50"
   arch_decoder: "upernet"
   fc_dim: 2048
 
@@ -39,4 +39,4 @@ TEST:
   checkpoint: "epoch_40.pth"
   result: "./"
 
-DIR: "ckpt/ade20k-resnet101-upernet"
+DIR: "ckpt/ade20k-resnet50-upernet"
