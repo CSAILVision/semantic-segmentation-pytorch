@@ -74,7 +74,6 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td rowspan="2">MobileNetV2dilated + C1_deepsup</td>
         <td>No</td><td>34.84</td><td>75.75</td><td>54.07</td>
         <td>17.2</td>
-        <td rowspan="2">0.8 * 20 = 16</td>
     </tr>
     <tr>
         <td>Yes</td><td>33.84</td><td>76.80</td><td>55.32</td>
