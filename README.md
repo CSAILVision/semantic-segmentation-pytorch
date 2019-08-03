@@ -18,8 +18,9 @@ Color encoding of semantic categories can be found here:
 https://docs.google.com/spreadsheets/d/1se8YEtb2detS7OuPE86fXGyD269pMycAWe2mtKUj2W8/edit?usp=sharing
 
 ## Updates
-- We use configuration files to store most options which were in argument parser. The definitions of options are detailed in ```config/defaults.py```.
 - HRNet model is now supported.
+- We use configuration files to store most options which were in argument parser. The definitions of options are detailed in ```config/defaults.py```.
+- We conform to Pytorch practice in data preprocessing (RGB [0, 1], substract mean, divide std).
 
 
 ## Highlights
@@ -61,7 +62,7 @@ Decoder:
 - UPerNet (Pyramid Pooling + FPN head, see [UperNet](https://arxiv.org/abs/1807.10221) for details.)
 
 ## Performance:
-IMPORTANT: We use our self-trained base model on ImageNet. The model takes the input in BGR form (consistent with opencv) instead of RGB form as used by default implementation of PyTorch. The base model will be automatically downloaded when needed.
+IMPORTANT: The base ResNet in our repository is a customized (different from the one in torchvision). The base models will be automatically downloaded when needed.
 
 <table><tbody>
     <th valign="bottom">Architecture</th>
