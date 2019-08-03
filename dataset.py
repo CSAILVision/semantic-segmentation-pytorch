@@ -32,8 +32,8 @@ class BaseDataset(torch.utils.data.Dataset):
 
         # mean and std
         self.normalize = transforms.Normalize(
-            mean=[122.7717/255., 115.9465/255., 102.9801/255.],
-            std=[1., 1., 1.])
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225])
 
     def parse_input_list(self, odgt, max_sample=-1, start_idx=-1, end_idx=-1):
         if isinstance(odgt, list):
