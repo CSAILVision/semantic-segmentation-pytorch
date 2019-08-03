@@ -14,7 +14,7 @@ from models import ModelBuilder, SegmentationModule
 from utils import colorEncode, find_recursive, setup_logger
 from lib.nn import user_scattered_collate, async_copy_to
 from lib.utils import as_numpy
-import cv2
+from PIL import Image
 from tqdm import tqdm
 from config import cfg
 
@@ -48,8 +48,8 @@ def visualize_result(data, pred, cfg):
     im_vis = np.concatenate((img, pred_color), axis=1)
 
     img_name = info.split('/')[-1]
-    cv2.imwrite(os.path.join(cfg.TEST.result,
-                img_name.replace('.jpg', '.png')), im_vis)
+    Image.fromarray(im_vis).save(
+        os.path.join(cfg.TEST.result, img_name.replace('.jpg', '.png')))
 
 
 def test(segmentation_module, loader, gpu):
