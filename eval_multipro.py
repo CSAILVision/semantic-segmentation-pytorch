@@ -16,7 +16,7 @@ from models import ModelBuilder, SegmentationModule
 from utils import AverageMeter, colorEncode, accuracy, intersectionAndUnion, parse_devices, setup_logger
 from lib.nn import user_scattered_collate, async_copy_to
 from lib.utils import as_numpy
-import cv2
+from PIL import Image
 from tqdm import tqdm
 
 colors = loadmat('data/color150.mat')['colors']
@@ -36,10 +36,7 @@ def visualize_result(data, pred, dir_result):
                             axis=1).astype(np.uint8)
 
     img_name = info.split('/')[-1]
-    cv2.imwrite(
-        os.path.join(dir_result, img_name.replace('.jpg', '.png')),
-        im_vis
-    )
+    Image.fromarray(im_vis).save(os.path.join(dir_result, img_name.replace('.jpg', '.png')))
 
 
 def evaluate(segmentation_module, loader, cfg, gpu_id, result_queue):
@@ -111,6 +108,8 @@ def worker(cfg, gpu_id, start_idx, end_idx, result_queue):
         num_class=cfg.DATASET.num_class,
         weights=cfg.MODEL.weights_decoder,
         use_softmax=True)
+
+    net_encoder.features[0][0].weight.data = net_encoder.features[0][0].weight.data[:, (2,1,0), :, :] * 255.
 
     crit = nn.NLLLoss(ignore_index=-1)
 
