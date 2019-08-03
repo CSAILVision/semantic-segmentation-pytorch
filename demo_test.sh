@@ -2,7 +2,7 @@
 
 # Image and model names
 TEST_IMG=ADE_val_00001519.jpg
-MODEL_PATH=baseline-resnet50dilated-ppm_deepsup
+MODEL_PATH=ade20k-resnet50dilated-ppm_deepsup
 RESULT_PATH=./
 
 ENCODER=$MODEL_PATH/encoder_epoch_20.pth
