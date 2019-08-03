@@ -28,4 +28,4 @@ python3 -u test.py \
   --cfg config/ade20k-resnet50dilated-ppm_deepsup.yaml \
   DIR $MODEL_PATH \
   TEST.result ./ \
-  TEST.suffix _epoch_20.pth
+  TEST.checkpoint epoch_20.pth

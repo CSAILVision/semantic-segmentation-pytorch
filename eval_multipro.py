@@ -109,8 +109,6 @@ def worker(cfg, gpu_id, start_idx, end_idx, result_queue):
         weights=cfg.MODEL.weights_decoder,
         use_softmax=True)
 
-    net_encoder.features[0][0].weight.data = net_encoder.features[0][0].weight.data[:, (2,1,0), :, :] * 255.
-
     crit = nn.NLLLoss(ignore_index=-1)
 
     segmentation_module = SegmentationModule(net_encoder, net_decoder, crit)
