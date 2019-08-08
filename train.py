@@ -70,7 +70,7 @@ def train(segmentation_module, iterator, optimizers, history, epoch, cfg):
             print('Epoch: [{}][{}/{}], Img/s: {:.2f} Time: {:.2f}, Data: {:.2f}, '
                   'lr_encoder: {:.6f}, lr_decoder: {:.6f}, '
                   'Accuracy: {:4.2f}, Loss: {:.6f}'
-                  .format(epoch, i, args.epoch_iters,
+                  .format(epoch, i, cfg.TRAIN.epoch_iters,
                           batch_data[0]['img_data'].shape[0]/batch_time.average(),
                           batch_time.average(), data_time.average(),
                           cfg.TRAIN.running_lr_encoder, cfg.TRAIN.running_lr_decoder,
