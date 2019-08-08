@@ -2,7 +2,7 @@
 
 # Image and model names
 TEST_IMG=ADE_val_00001519.jpg
-MODEL_PATH=baseline-resnet50dilated-ppm_deepsup
+MODEL_PATH=ade20k-resnet50dilated-ppm_deepsup
 RESULT_PATH=./
 
 ENCODER=$MODEL_PATH/encoder_epoch_20.pth
@@ -24,9 +24,8 @@ fi
 
 # Inference
 python3 -u test.py \
-  --model_path $MODEL_PATH \
-  --test_imgs $TEST_IMG \
-  --arch_encoder resnet50dilated \
-  --arch_decoder ppm_deepsup \
-  --fc_dim 2048 \
-  --result $RESULT_PATH
+  --imgs $TEST_IMG \
+  --cfg config/ade20k-resnet50dilated-ppm_deepsup.yaml \
+  DIR $MODEL_PATH \
+  TEST.result ./ \
+  TEST.checkpoint epoch_20.pth

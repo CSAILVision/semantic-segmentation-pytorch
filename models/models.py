@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
 import torchvision
-from . import resnet, resnext, mobilenet
+from . import resnet, resnext, mobilenet, hrnet
 from lib.nn import SynchronizedBatchNorm2d
+BatchNorm2d = SynchronizedBatchNorm2d
 
 
 class SegmentationModuleBase(nn.Module):
@@ -47,23 +48,10 @@ class SegmentationModule(SegmentationModuleBase):
             return pred
 
 
-def conv3x3(in_planes, out_planes, stride=1, has_bias=False):
-    "3x3 convolution with padding"
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=1, bias=has_bias)
-
-
-def conv3x3_bn_relu(in_planes, out_planes, stride=1):
-    return nn.Sequential(
-            conv3x3(in_planes, out_planes, stride),
-            SynchronizedBatchNorm2d(out_planes),
-            nn.ReLU(inplace=True),
-            )
-
-
-class ModelBuilder():
+class ModelBuilder:
     # custom weights initialization
-    def weights_init(self, m):
+    @staticmethod
+    def weights_init(m):
         classname = m.__class__.__name__
         if classname.find('Conv') != -1:
             nn.init.kaiming_normal_(m.weight.data)
@@ -73,7 +61,8 @@ class ModelBuilder():
         #elif classname.find('Linear') != -1:
         #    m.weight.data.normal_(0.0, 0.0001)
 
-    def build_encoder(self, arch='resnet50dilated', fc_dim=512, weights=''):
+    @staticmethod
+    def build_encoder(arch='resnet50dilated', fc_dim=512, weights=''):
         pretrained = True if len(weights) == 0 else False
         arch = arch.lower()
         if arch == 'mobilenetv2dilated':
@@ -108,17 +97,21 @@ class ModelBuilder():
         elif arch == 'resnext101':
             orig_resnext = resnext.__dict__['resnext101'](pretrained=pretrained)
             net_encoder = Resnet(orig_resnext) # we can still use class Resnet
+        elif arch == 'hrnetv2':
+            net_encoder = hrnet.__dict__['hrnetv2'](pretrained=pretrained)
         else:
             raise Exception('Architecture undefined!')
 
-        # net_encoder.apply(self.weights_init)
+        # encoders are usually pretrained
+        # net_encoder.apply(ModelBuilder.weights_init)
         if len(weights) > 0:
             print('Loading weights for net_encoder')
             net_encoder.load_state_dict(
                 torch.load(weights, map_location=lambda storage, loc: storage), strict=False)
         return net_encoder
 
-    def build_decoder(self, arch='ppm_deepsup',
+    @staticmethod
+    def build_decoder(arch='ppm_deepsup',
                       fc_dim=512, num_class=150,
                       weights='', use_softmax=False):
         arch = arch.lower()
@@ -157,12 +150,22 @@ class ModelBuilder():
         else:
             raise Exception('Architecture undefined!')
 
-        net_decoder.apply(self.weights_init)
+        net_decoder.apply(ModelBuilder.weights_init)
         if len(weights) > 0:
             print('Loading weights for net_decoder')
             net_decoder.load_state_dict(
                 torch.load(weights, map_location=lambda storage, loc: storage), strict=False)
         return net_decoder
+
+
+def conv3x3_bn_relu(in_planes, out_planes, stride=1):
+    "3x3 convolution + BN + relu"
+    return nn.Sequential(
+            nn.Conv2d(in_planes, out_planes, kernel_size=3,
+                      stride=stride, padding=1, bias=False),
+            BatchNorm2d(out_planes),
+            nn.ReLU(inplace=True),
+            )
 
 
 class Resnet(nn.Module):
@@ -395,7 +398,7 @@ class PPM(nn.Module):
             self.ppm.append(nn.Sequential(
                 nn.AdaptiveAvgPool2d(scale),
                 nn.Conv2d(fc_dim, 512, kernel_size=1, bias=False),
-                SynchronizedBatchNorm2d(512),
+                BatchNorm2d(512),
                 nn.ReLU(inplace=True)
             ))
         self.ppm = nn.ModuleList(self.ppm)
@@ -403,7 +406,7 @@ class PPM(nn.Module):
         self.conv_last = nn.Sequential(
             nn.Conv2d(fc_dim+len(pool_scales)*512, 512,
                       kernel_size=3, padding=1, bias=False),
-            SynchronizedBatchNorm2d(512),
+            BatchNorm2d(512),
             nn.ReLU(inplace=True),
             nn.Dropout2d(0.1),
             nn.Conv2d(512, num_class, kernel_size=1)
@@ -444,7 +447,7 @@ class PPMDeepsup(nn.Module):
             self.ppm.append(nn.Sequential(
                 nn.AdaptiveAvgPool2d(scale),
                 nn.Conv2d(fc_dim, 512, kernel_size=1, bias=False),
-                SynchronizedBatchNorm2d(512),
+                BatchNorm2d(512),
                 nn.ReLU(inplace=True)
             ))
         self.ppm = nn.ModuleList(self.ppm)
@@ -453,7 +456,7 @@ class PPMDeepsup(nn.Module):
         self.conv_last = nn.Sequential(
             nn.Conv2d(fc_dim+len(pool_scales)*512, 512,
                       kernel_size=3, padding=1, bias=False),
-            SynchronizedBatchNorm2d(512),
+            BatchNorm2d(512),
             nn.ReLU(inplace=True),
             nn.Dropout2d(0.1),
             nn.Conv2d(512, num_class, kernel_size=1)
@@ -509,7 +512,7 @@ class UPerNet(nn.Module):
             self.ppm_pooling.append(nn.AdaptiveAvgPool2d(scale))
             self.ppm_conv.append(nn.Sequential(
                 nn.Conv2d(fc_dim, 512, kernel_size=1, bias=False),
-                SynchronizedBatchNorm2d(512),
+                BatchNorm2d(512),
                 nn.ReLU(inplace=True)
             ))
         self.ppm_pooling = nn.ModuleList(self.ppm_pooling)
@@ -518,16 +521,16 @@ class UPerNet(nn.Module):
 
         # FPN Module
         self.fpn_in = []
-        for fpn_inplane in fpn_inplanes[:-1]: # skip the top layer
+        for fpn_inplane in fpn_inplanes[:-1]:   # skip the top layer
             self.fpn_in.append(nn.Sequential(
                 nn.Conv2d(fpn_inplane, fpn_dim, kernel_size=1, bias=False),
-                SynchronizedBatchNorm2d(fpn_dim),
+                BatchNorm2d(fpn_dim),
                 nn.ReLU(inplace=True)
             ))
         self.fpn_in = nn.ModuleList(self.fpn_in)
 
         self.fpn_out = []
-        for i in range(len(fpn_inplanes) - 1): # skip the top layer
+        for i in range(len(fpn_inplanes) - 1):  # skip the top layer
             self.fpn_out.append(nn.Sequential(
                 conv3x3_bn_relu(fpn_dim, fpn_dim, 1),
             ))

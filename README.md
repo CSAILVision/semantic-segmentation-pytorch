@@ -5,6 +5,8 @@ This is a PyTorch implementation of semantic segmentation models on MIT ADE20K s
 ADE20K is the largest open source dataset for semantic segmentation and scene parsing, released by MIT Computer Vision team. Follow the link below to find the repository for our dataset and implementations on Caffe and Torch7:
 https://github.com/CSAILVision/sceneparsing
 
+If you simply want to play with our demo, please try this link: http://scenesegmentation.csail.mit.edu You can upload your own photo and parse it!
+
 All pretrained models can be found at:
 http://sceneparsing.csail.mit.edu/model/pytorch
 
@@ -14,6 +16,12 @@ http://sceneparsing.csail.mit.edu/model/pytorch
 
 Color encoding of semantic categories can be found here:
 https://docs.google.com/spreadsheets/d/1se8YEtb2detS7OuPE86fXGyD269pMycAWe2mtKUj2W8/edit?usp=sharing
+
+## Updates
+- HRNet model is now supported.
+- We use configuration files to store most options which were in argument parser. The definitions of options are detailed in ```config/defaults.py```.
+- We conform to Pytorch practice in data preprocessing (RGB [0, 1], substract mean, divide std).
+
 
 ## Highlights
 
@@ -30,31 +38,31 @@ For the task of semantic segmentation, it is good to keep aspect ratio of images
 
 <sup>*Now the batch size of a dataloader always equals to the number of GPUs*, each element will be sent to a GPU. It is also compatible with multi-processing. Note that the file index for the multi-processing dataloader is stored on the master process, which is in contradict to our goal that each worker maintains its own file list. So we use a trick that although the master process still gives dataloader an index for `__getitem__` function, we just ignore such request and send a random batch dict. Also, *the multiple workers forked by the dataloader all have the same seed*, you will find that multiple workers will yield exactly the same data, if we use the above-mentioned trick directly. Therefore, we add one line of code which sets the defaut seed for `numpy.random` before activating multiple worker in dataloader.</sup>
 
-### An Efficient and Effective Framework: UPerNet
-UPerNet is a model based on Feature Pyramid Network (FPN) and Pyramid Pooling Module (PPM). It doesn't need dilated convolution, an operator that is time-and-memory consuming. *Without bells and whistles*, it is comparable or even better compared with PSPNet, while requiring much shorter training time and less GPU memory (e.g., you cannot train a PSPNet-101 on TITAN Xp GPUs with only 12GB memory, while you can train a UPerNet-101 on such GPUs). Thanks to the efficient network design, we will soon open source stronger models of UPerNet based on ResNeXt that is able to run on normal GPUs. Please refer to [UperNet](https://arxiv.org/abs/1807.10221) for details.
+### State-of-the-Art models
+- **PSPNet** is scene parsing network that aggregates global representation with Pyramid Pooling Module (PPM). It is the winner model of ILSVRC'16 MIT Scene Parsing Challenge. Please refer to [https://arxiv.org/abs/1612.01105](https://arxiv.org/abs/1612.01105) for details.
+- **UPerNet** is a model based on Feature Pyramid Network (FPN) and Pyramid Pooling Module (PPM). It doesn't need dilated convolution, an operator that is time-and-memory consuming. *Without bells and whistles*, it is comparable or even better compared with PSPNet, while requiring much shorter training time and less GPU memory. Please refer to [https://arxiv.org/abs/1807.10221](https://arxiv.org/abs/1807.10221) for details.
+- **HRNet** is a recently proposed model that retains high resolution representations throughout the model, without the traditional bottleneck design. It achieves the SOTA performance on a series of pixel labeling tasks. Please refer to [https://arxiv.org/abs/1904.04514](https://arxiv.org/abs/1904.04514) for details.
 
 
 ## Supported models
-We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling.
+We split our models into encoder and decoder, where encoders are usually modified directly from classification networks, and decoders consist of final convolutions and upsampling. We have provided some pre-configured models in the ```config``` folder.
 
 Encoder:
 - MobileNetV2dilated
-- ResNet18dilated
-- ResNet50dilated
-- ResNet101dilated
-
-***Coming soon***:
-- ResNeXt101dilated
+- ResNet18/ResNet18dilated
+- ResNet50/ResNet50dilated
+- ResNet101/ResNet101dilated
+- HRNet (HRNetV2-W48)
 
 Decoder:
-- C1 (1 convolution module)
+- C1 (one convolution module)
 - C1_deepsup (C1 + deep supervision trick)
 - PPM (Pyramid Pooling Module, see [PSPNet](https://hszhao.github.io/projects/pspnet) paper for details.)
 - PPM_deepsup (PPM + deep supervision trick)
 - UPerNet (Pyramid Pooling + FPN head, see [UperNet](https://arxiv.org/abs/1807.10221) for details.)
 
 ## Performance:
-IMPORTANT: We use our self-trained base model on ImageNet. The model takes the input in BGR form (consistent with opencv) instead of RGB form as used by default implementation of PyTorch. The base model will be automatically downloaded when needed.
+IMPORTANT: The base ResNet in our repository is a customized (different from the one in torchvision). The base models will be automatically downloaded when needed.
 
 <table><tbody>
     <th valign="bottom">Architecture</th>
@@ -63,22 +71,19 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
     <th valign="bottom">Pixel Accuracy(%)</th>
     <th valign="bottom">Overall Score</th>
     <th valign="bottom">Inference Speed(fps)</th>
-    <th valign="bottom">Training Time(hours)</th>
     <tr>
         <td rowspan="2">MobileNetV2dilated + C1_deepsup</td>
-        <td>No</td><td>32.39</td><td>75.75</td><td>54.07</td>
+        <td>No</td><td>34.84</td><td>75.75</td><td>54.07</td>
         <td>17.2</td>
-        <td rowspan="2">0.8 * 20 = 16</td>
     </tr>
     <tr>
-        <td>Yes</td><td>33.75</td><td>76.75</td><td>55.25</td>
+        <td>Yes</td><td>33.84</td><td>76.80</td><td>55.32</td>
         <td>10.3</td>
     </tr>
     <tr>
         <td rowspan="2">MobileNetV2dilated + PPM_deepsup</td>
         <td>No</td><td>35.76</td><td>77.77</td><td>56.27</td>
         <td>14.9</td>
-        <td rowspan="2">0.9 * 20 = 18.0</td>
     </tr>
     <tr>
         <td>Yes</td><td>36.28</td><td>78.26</td><td>57.27</td>
@@ -88,7 +93,6 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td rowspan="2">ResNet18dilated + C1_deepsup</td>
         <td>No</td><td>33.82</td><td>76.05</td><td>54.94</td>
         <td>13.9</td>
-        <td rowspan="2">0.42 * 20 = 8.4</td>
     </tr>
     <tr>
         <td>Yes</td><td>35.34</td><td>77.41</td><td>56.38</td>
@@ -98,7 +102,6 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td rowspan="2">ResNet18dilated + PPM_deepsup</td>
         <td>No</td><td>38.00</td><td>78.64</td><td>58.32</td>
         <td>11.7</td>
-        <td rowspan="2">1.1 * 20 = 22.0</td>
     </tr>
     <tr>
         <td>Yes</td><td>38.81</td><td>79.29</td><td>59.05</td>
@@ -108,56 +111,57 @@ IMPORTANT: We use our self-trained base model on ImageNet. The model takes the i
         <td rowspan="2">ResNet50dilated + PPM_deepsup</td>
         <td>No</td><td>41.26</td><td>79.73</td><td>60.50</td>
         <td>8.3</td>
-        <td rowspan="2">1.67 * 20 = 33.4</td>
     </tr>
     <tr>
-        <td>Yes</td><td>42.04</td><td>80.23</td><td>61.14</td>
+        <td>Yes</td><td>42.14</td><td>80.13</td><td>61.14</td>
         <td>2.6</td>
     </tr>
     <tr>
         <td rowspan="2">ResNet101dilated + PPM_deepsup</td>
         <td>No</td><td>42.19</td><td>80.59</td><td>61.39</td>
         <td>6.8</td>
-        <td rowspan="2">3.82 * 25 = 95.5</td>
     </tr>
     <tr>
         <td>Yes</td><td>42.53</td><td>80.91</td><td>61.72</td>
         <td>2.0</td>
     </tr>
     <tr>
-        <td rowspan="2"><b>UperNet50</b></td>
+        <td rowspan="2">UperNet50</td>
         <td>No</td><td>40.44</td><td>79.80</td><td>60.12</td>
         <td>8.4</td>
-        <td rowspan="2">1.75 * 20 = 35.0</td>
     </tr>
     <tr>
         <td>Yes</td><td>41.55</td><td>80.23</td><td>60.89</td>
         <td>2.9</td>
     </tr>
     <tr>
-        <td rowspan="2"><b>UperNet101</b></td>
+        <td rowspan="2">UperNet101</td>
         <td>No</td><td>42.00</td><td>80.79</td><td>61.40</td>
         <td>7.8</td>
-        <td rowspan="2">2.5 * 25 = 62.5</td>
     </tr>
     <tr>
         <td>Yes</td><td>42.66</td><td>81.01</td><td>61.84</td>
         <td>2.3</td>
     </tr>
     <tr>
-        <td>UPerNet-ResNext101 (coming soon!)</td>
-        <td>-</td><td>-</td><td>-</td><td>-</td>
-        <td>-</td>
-        <td>-</td>
+        <td rowspan="2">HRNetV2-W48</td>
+        <td>No</td><td>41.74</td><td>80.59</td><td>61.17</td>
+        <td>5.8</td>
     </tr>
+    <tr>
+        <td>Yes</td><td>42.99</td><td>81.25</td><td>62.12</td>
+        <td>1.9</td>
+    </tr>
+
 </tbody></table>
 
-The training is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GPU memory), ***except for*** ResNet101dilated, which is benchmarked on a server with 8 NVIDIA Tesla P40 GPUS (22GB GPU memory), because of the insufficient memory issue when using dilated conv on a very deep network. The inference speed is benchmarked a single NVIDIA Pascal Titan Xp GPU, without visualization.
+The training is benchmarked on a server with 8 NVIDIA Pascal Titan Xp GPUs (12GB GPU memory), the inference speed is benchmarked a single NVIDIA Pascal Titan Xp GPU, without visualization.
 
 ## Environment
 The code is developed under the following configurations.
-- Hardware: 1-8 GPUs (with at least 12G GPU memories) (change ```[--gpus GPUS]``` accordingly)
+- Hardware: >=4 GPUs for training, >=1 GPU for testing (set ```[--gpus GPUS]``` accordingly)
 - Software: Ubuntu 16.04.3 LTS, ***CUDA>=8.0, Python>=3.5, PyTorch>=0.4.0***
+- Dependencies: numpy, scipy, opencv, yacs, tqdm
 
 ## Quick start: Test on an image using our trained model 
 1. Here is a simple demo to do inference on a single image:
@@ -167,16 +171,10 @@ chmod +x demo_test.sh
 ```
 This script downloads a trained model (ResNet50dilated + PPM_deepsup) and a test image, runs the test script, and saves predicted segmentation (.png) to the working directory.
 
-2. To test on multiple images or a folder of images, you can simply do something as the following (```$PATH_IMG1, $PATH_IMG2, $PATH_IMG3```are your image paths):
+2. To test on an image or a folder of images (```$PATH_IMG```), you can simply do the following:
 ```
-python3 -u test.py \
-  --model_path $MODEL_PATH \
-  --test_imgs $PATH_IMG1 $PATH_IMG2 $PATH_IMG3 \
-  --arch_encoder resnet50dilated \
-  --arch_decoder ppm_deepsup
+python3 -u test.py --imgs $PATH_IMG --gpu $GPU --cfg $CFG
 ```
-
-3. See full input arguments via ```python3 test.py -h```.
 
 ## Training
 1. Download the ADE20K scene parsing dataset:
@@ -184,69 +182,51 @@ python3 -u test.py \
 chmod +x download_ADE20K.sh
 ./download_ADE20K.sh
 ```
-2. Train a model (default: ResNet50dilated + PPM_deepsup). During training, checkpoints will be saved in folder ```ckpt```.
+2. Train a model by selecting the GPUs (```$GPUS```) and configuration file (```$CFG```) to use. During training, checkpoints by default are saved in folder ```ckpt```.
 ```bash
-python3 train.py --gpus GPUS
+python3 train.py --gpus $GPUS --cfg $CFG 
 ```
-
 - To choose which gpus to use, you can either do ```--gpus 0-7```, or ```--gpus 0,2,4,6```.
 
-For example:
+For example, you can start with our provided configurations: 
 
 * Train MobileNetV2dilated + C1_deepsup
 ```bash
-python3 train.py --gpus GPUS \
-    --arch_encoder mobilenetv2dilated --arch_decoder c1_deepsup \
-    --fc_dim 320
+python3 train.py --gpus GPUS --cfg config/ade20k-mobilenetv2dilated-c1_deepsup.yaml
 ```
 
-* Train ResNet18dilated + PPM_deepsup
+* Train ResNet50dilated + PPM_deepsup
 ```bash
-python3 train.py --gpus GPUS \
-    --arch_encoder resnet18dilated --arch_decoder ppm_deepsup \
-    --fc_dim 512
+python3 train.py --gpus GPUS --cfg config/ade20k-resnet50dilated-ppm_deepsup.yaml
 ```
 
 * Train UPerNet101
 ```bash
-python3 train.py --gpus GPUS \
-    --arch_encoder resnet101 --arch_decoder upernet \
-    --segm_downsampling_rate 4 --padding_constant 32
+python3 train.py --gpus GPUS --cfg config/ade20k-resnet101-upernet.yaml
 ```
 
-3. See full input arguments via ```python3 train.py -h ```.
+3. You can also override options in commandline, for example  ```python3 train.py TRAIN.num_epoch 10 ```.
 
 
 ## Evaluation
-1. Evaluate a trained model on the validation set. ```--id``` is the folder name under ```ckpt``` directory. ```--suffix``` defines which checkpoint to use, for example ```_epoch_20.pth```. Add ```--visualize``` option to output visualizations as shown in teaser.
-```bash
-python3 eval_multipro.py --gpus GPUS --id MODEL_ID --suffix SUFFIX
-```
+1. Evaluate a trained model on the validation set. Add ```VAL.visualize True``` in argument to output visualizations as shown in teaser.
 
 For example:
 
 * Evaluate MobileNetV2dilated + C1_deepsup
 ```bash
-python3 eval_multipro.py --gpus GPUS \
-    --id MODEL_ID --suffix SUFFIX --arch_encoder mobilenetv2dilated --arch_decoder c1_deepsup \
-    --fc_dim 320
+python3 eval_multipro.py --gpus GPUS --cfg config/ade20k-mobilenetv2dilated-c1_deepsup.yaml
 ```
 
-* Evaluate ResNet18dilated + PPM_deepsup
+* Evaluate ResNet50dilated + PPM_deepsup
 ```bash
-python3 eval_multipro.py --gpus GPUS \
-    --id MODEL_ID --suffix SUFFIX --arch_encoder resnet18dilated --arch_decoder ppm_deepsup \
-    --fc_dim 512
+python3 eval_multipro.py --gpus GPUS --cfg config/ade20k-resnet50dilated-ppm_deepsup.yaml
 ```
 
 * Evaluate UPerNet101
 ```bash
-python3 eval_multipro.py --gpus GPUS \
-    --id MODEL_ID --suffix SUFFIX --arch_encoder resnet101 --arch_decoder upernet \
-    --padding_constant 32
+python3 eval_multipro.py --gpus GPUS --cfg config/ade20k-resnet101-upernet.yaml
 ```
-
-2. See full input arguments via ```python3 eval_multipro.py -h ```.
 
 ## Reference
 

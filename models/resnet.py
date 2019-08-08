@@ -1,14 +1,8 @@
-import os
-import sys
-import torch
 import torch.nn as nn
 import math
+from .utils import load_url
 from lib.nn import SynchronizedBatchNorm2d
-
-try:
-    from urllib import urlretrieve
-except ImportError:
-    from urllib.request import urlretrieve
+BatchNorm2d = SynchronizedBatchNorm2d
 
 
 __all__ = ['ResNet', 'resnet18', 'resnet50', 'resnet101'] # resnet101 is coming soon!
@@ -33,10 +27,10 @@ class BasicBlock(nn.Module):
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(BasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride)
-        self.bn1 = SynchronizedBatchNorm2d(planes)
+        self.bn1 = BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes)
-        self.bn2 = SynchronizedBatchNorm2d(planes)
+        self.bn2 = BatchNorm2d(planes)
         self.downsample = downsample
         self.stride = stride
 
@@ -65,12 +59,12 @@ class Bottleneck(nn.Module):
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(Bottleneck, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
-        self.bn1 = SynchronizedBatchNorm2d(planes)
+        self.bn1 = BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
                                padding=1, bias=False)
-        self.bn2 = SynchronizedBatchNorm2d(planes)
+        self.bn2 = BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
-        self.bn3 = SynchronizedBatchNorm2d(planes * 4)
+        self.bn3 = BatchNorm2d(planes * 4)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
@@ -104,13 +98,13 @@ class ResNet(nn.Module):
         self.inplanes = 128
         super(ResNet, self).__init__()
         self.conv1 = conv3x3(3, 64, stride=2)
-        self.bn1 = SynchronizedBatchNorm2d(64)
+        self.bn1 = BatchNorm2d(64)
         self.relu1 = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(64, 64)
-        self.bn2 = SynchronizedBatchNorm2d(64)
+        self.bn2 = BatchNorm2d(64)
         self.relu2 = nn.ReLU(inplace=True)
         self.conv3 = conv3x3(64, 128)
-        self.bn3 = SynchronizedBatchNorm2d(128)
+        self.bn3 = BatchNorm2d(128)
         self.relu3 = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
@@ -125,7 +119,7 @@ class ResNet(nn.Module):
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
-            elif isinstance(m, SynchronizedBatchNorm2d):
+            elif isinstance(m, BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
@@ -135,7 +129,7 @@ class ResNet(nn.Module):
             downsample = nn.Sequential(
                 nn.Conv2d(self.inplanes, planes * block.expansion,
                           kernel_size=1, stride=stride, bias=False),
-                SynchronizedBatchNorm2d(planes * block.expansion),
+                BatchNorm2d(planes * block.expansion),
             )
 
         layers = []
@@ -220,13 +214,3 @@ def resnet101(pretrained=False, **kwargs):
 #     if pretrained:
 #         model.load_state_dict(load_url(model_urls['resnet152']))
 #     return model
-
-def load_url(url, model_dir='./pretrained', map_location=None):
-    if not os.path.exists(model_dir):
-        os.makedirs(model_dir)
-    filename = url.split('/')[-1]
-    cached_file = os.path.join(model_dir, filename)
-    if not os.path.exists(cached_file):
-        sys.stderr.write('Downloading: "{}" to {}\n'.format(url, cached_file))
-        urlretrieve(url, cached_file)
-    return torch.load(cached_file, map_location=map_location)
