@@ -52,7 +52,7 @@ Encoder:
 - ResNet18/ResNet18dilated
 - ResNet50/ResNet50dilated
 - ResNet101/ResNet101dilated
-- HRNet (HRNetV2-W48)
+- HRNetV2 (W48)
 
 Decoder:
 - C1 (one convolution module)
@@ -144,12 +144,12 @@ IMPORTANT: The base ResNet in our repository is a customized (different from the
         <td>2.3</td>
     </tr>
     <tr>
-        <td rowspan="2">HRNetV2-W48</td>
-        <td>No</td><td>41.74</td><td>80.59</td><td>61.17</td>
+        <td rowspan="2">HRNetV2</td>
+        <td>No</td><td>42.03</td><td>80.77</td><td>61.40</td>
         <td>5.8</td>
     </tr>
     <tr>
-        <td>Yes</td><td>42.99</td><td>81.25</td><td>62.12</td>
+        <td>Yes</td><td>43.20</td><td>81.47</td><td>62.34</td>
         <td>1.9</td>
     </tr>
 
