@@ -3,7 +3,7 @@ import json
 import torch
 from torchvision import transforms
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 
 
 def imresize(im, size, interp='bilinear'):
@@ -51,19 +51,19 @@ class BaseDataset(torch.utils.data.Dataset):
         print('# samples: {}'.format(self.num_sample))
 
     def img_transform(self, img):
-        # 0-255 to 0-1
+        # transform image from 0-255 to 0-1, normalize, to tensor
         img = np.float32(np.array(img)) / 255.
         img = img.transpose((2, 0, 1))
         img = self.normalize(torch.from_numpy(img.copy()))
         return img
 
     def segm_transform(self, segm):
-        # to tensor, -1 to 149
+        # transform segm label to tensor, -1 to 149
         segm = torch.from_numpy(np.array(segm)).long() - 1
         return segm
 
-    # Round x to the nearest multiple of p and x' >= x
     def round2nearest_multiple(self, x, p):
+        # Round x to the nearest multiple of p and x' >= x
         return ((x - 1) // p + 1) * p
 
 
@@ -81,6 +81,26 @@ class TrainDataset(BaseDataset):
         # override dataset length when trainig with batch_per_gpu > 1
         self.cur_idx = 0
         self.if_shuffled = False
+
+    def augment(self, img, segm):
+        # data augmentation for training
+
+        # random flip
+        if np.random.choice([0, 1]):
+            img = img.transpose(Image.FLIP_LEFT_RIGHT)
+            segm = segm.transpose(Image.FLIP_LEFT_RIGHT)
+
+        # random blur
+        # if np.random.choice([0, 1]):
+        #     img.filter(ImageFilter.GaussianBlur(radius=5))
+
+        # random rotate
+        if np.random.choice([0, 1]):
+            angle = 20 * (np.random.random() - 0.5)
+            img = img.rotate(angle, resample=Image.BICUBIC)
+            segm = segm.rotate(angle, resample=Image.NEAREST)
+
+        return img, segm
 
     def _get_sub_batch(self):
         while True:
@@ -119,7 +139,8 @@ class TrainDataset(BaseDataset):
 
         # resize all images' short edges to the chosen size
         if isinstance(self.imgSizes, list) or isinstance(self.imgSizes, tuple):
-            this_short_size = np.random.choice(self.imgSizes)
+            # this_short_size = np.random.choice(self.imgSizes)
+            this_short_size = np.random.randint(min(self.imgSizes), max(self.imgSizes)+1)
         else:
             this_short_size = self.imgSizes
 
@@ -163,10 +184,8 @@ class TrainDataset(BaseDataset):
             assert(img.size[0] == segm.size[0])
             assert(img.size[1] == segm.size[1])
 
-            # random_flip
-            if np.random.choice([0, 1]):
-                img = img.transpose(Image.FLIP_LEFT_RIGHT)
-                segm = segm.transpose(Image.FLIP_LEFT_RIGHT)
+            # augmentation
+            img, segm = self.augment(img, segm)
 
             # note that each sample within a mini batch has different scale param
             img = imresize(img, (batch_widths[i], batch_heights[i]), interp='bilinear')
