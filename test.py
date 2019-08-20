@@ -9,7 +9,7 @@ import torch.nn as nn
 from scipy.io import loadmat
 import csv
 # Our libs
-from dataset import TestDataset
+from datasets import DatasetBuilder
 from models import ModelBuilder, SegmentationModule
 from utils import colorEncode, find_recursive, setup_logger
 from lib.nn import user_scattered_collate, async_copy_to
@@ -111,9 +111,10 @@ def main(cfg, gpu):
     segmentation_module = SegmentationModule(net_encoder, net_decoder, crit)
 
     # Dataset and Loader
-    dataset_test = TestDataset(
-        cfg.list_test,
-        cfg.DATASET)
+    dataset_train = DatasetBuilder.build_dataset(
+        subset='test',
+        opt=cfg.DATASET,
+        odgt=cfg.list_test)
     loader_test = torch.utils.data.DataLoader(
         dataset_test,
         batch_size=cfg.TEST.batch_size,

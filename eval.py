@@ -10,7 +10,7 @@ import torch.nn as nn
 from scipy.io import loadmat
 # Our libs
 from config import cfg
-from dataset import ValDataset
+from datasets import DatasetBuilder
 from models import ModelBuilder, SegmentationModule
 from utils import AverageMeter, colorEncode, accuracy, intersectionAndUnion, setup_logger
 from lib.nn import user_scattered_collate, async_copy_to
@@ -124,10 +124,11 @@ def main(cfg, gpu):
     segmentation_module = SegmentationModule(net_encoder, net_decoder, crit)
 
     # Dataset and Loader
-    dataset_val = ValDataset(
-        cfg.DATASET.root_dataset,
-        cfg.DATASET.list_val,
-        cfg.DATASET)
+    dataset_val = DatasetBuilder.build_dataset(
+        subset='val',
+        opt=cfg.DATASET,
+        odgt=cfg.DATASET.list_val,
+        start_idx=start_idx, end_idx=end_idx)
     loader_val = torch.utils.data.DataLoader(
         dataset_val,
         batch_size=cfg.VAL.batch_size,

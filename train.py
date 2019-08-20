@@ -10,7 +10,8 @@ import torch
 import torch.nn as nn
 # Our libs
 from config import cfg
-from dataset import TrainDataset
+from datasets import DatasetBuilder
+# from dataset import TrainDataset
 from models import ModelBuilder, SegmentationModule
 from utils import AverageMeter, parse_devices, setup_logger
 from lib.nn import UserScatteredDataParallel, user_scattered_collate, patch_replication_callback
@@ -161,11 +162,11 @@ def main(cfg, gpus):
             net_encoder, net_decoder, crit)
 
     # Dataset and Loader
-    dataset_train = TrainDataset(
-        cfg.DATASET.root_dataset,
-        cfg.DATASET.list_train,
-        cfg.DATASET,
-        batch_per_gpu=cfg.TRAIN.batch_size_per_gpu)
+    dataset_train = DatasetBuilder.build_dataset(
+        subset='train',
+        opt=cfg.DATASET,
+        odgt=cfg.DATASET.list_train,
+        batch_per_gpu=cfg.TRAIN.batch_size_per_gpu)        
 
     loader_train = torch.utils.data.DataLoader(
         dataset_train,
