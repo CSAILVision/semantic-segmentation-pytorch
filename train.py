@@ -162,9 +162,8 @@ def main(cfg, gpus):
 
     # Dataset and Loader
     dataset_train = TrainDataset(
-        cfg.DATASET.root_dataset,
-        cfg.DATASET.list_train,
-        cfg.DATASET,
+        opt=cfg.DATASET,
+        odgt=cfg.DATASET.list_train,
         batch_per_gpu=cfg.TRAIN.batch_size_per_gpu)
 
     loader_train = torch.utils.data.DataLoader(

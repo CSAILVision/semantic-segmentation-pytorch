@@ -1,7 +1,7 @@
 DATASET:
   root_dataset: "./data/"
-  list_train: "./data/training.odgt"
-  list_val: "./data/validation.odgt"
+  list_train: "./data/ade_training.odgt"
+  list_val: "./data/ade_validation.odgt"
   num_class: 150
   imgSizes: (300, 375, 450, 525, 600)
   imgMaxSize: 1000

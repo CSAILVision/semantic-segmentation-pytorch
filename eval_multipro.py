@@ -86,9 +86,8 @@ def worker(cfg, gpu_id, start_idx, end_idx, result_queue):
 
     # Dataset and Loader
     dataset_val = ValDataset(
-        cfg.DATASET.root_dataset,
-        cfg.DATASET.list_val,
-        cfg.DATASET,
+        opt=cfg.DATASET,
+        odgt=cfg.DATASET.list_val,
         start_idx=start_idx, end_idx=end_idx)
     loader_val = torch.utils.data.DataLoader(
         dataset_val,

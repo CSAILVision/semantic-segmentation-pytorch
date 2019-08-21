@@ -1,10 +1,10 @@
 DATASET:
   root_dataset: "./data/"
-  list_train: "./data/ade_training.odgt"
-  list_val: "./data/ade_validation.odgt"
-  num_class: 150
-  imgSizes: (300, 375, 450, 525, 600)
-  imgMaxSize: 1000
+  list_train: "./data/cityscapes_train.odgt"
+  list_val: "./data/cityscapes_val.odgt"
+  num_class: 19
+  imgSizes: (600,)
+  imgMaxSize: 1280
   padding_constant: 8
   segm_downsampling_rate: 8
   random_flip: True
@@ -16,7 +16,7 @@ MODEL:
 
 TRAIN:
   batch_size_per_gpu: 2
-  num_epoch: 25
+  num_epoch: 20
   start_epoch: 0
   epoch_iters: 5000
   optim: "SGD"
@@ -33,10 +33,10 @@ TRAIN:
 
 VAL:
   visualize: False
-  checkpoint: "epoch_25.pth"
+  checkpoint: "epoch_20.pth"
 
 TEST:
-  checkpoint: "epoch_25.pth"
+  checkpoint: "epoch_20.pth"
   result: "./"
 
-DIR: "ckpt/ade20k-resnet50dilated-ppm_deepsup"
+DIR: "ckpt/cityscapes-resnet50dilated-ppm_deepsup"

@@ -3,7 +3,46 @@ import json
 import torch
 from torchvision import transforms
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
+
+
+def get_convert_label_fn(odgt):
+    """
+    A function that converts labels to expected range [-1, num_classes-1] where -1 is ignored.
+    When using custom dataset, you might want to add your own function.
+    """
+    def convert_ade_label(segm):
+        "Convert ADE labels to range [-1, 149]"
+        return segm - 1
+
+    def convert_cityscapes_label(segm):
+        "Convert cityscapes labels to range [-1, 18]"
+        ignore_label = -1
+        label_mapping = {
+            -1: ignore_label, 0: ignore_label,
+            1: ignore_label, 2: ignore_label,
+            3: ignore_label, 4: ignore_label,
+            5: ignore_label, 6: ignore_label,
+            7: 0, 8: 1, 9: ignore_label,
+            10: ignore_label, 11: 2, 12: 3,
+            13: 4, 14: ignore_label, 15: ignore_label,
+            16: ignore_label, 17: 5, 18: ignore_label,
+            19: 6, 20: 7, 21: 8, 22: 9, 23: 10, 24: 11,
+            25: 12, 26: 13, 27: 14, 28: 15,
+            29: ignore_label, 30: ignore_label,
+            31: 16, 32: 17, 33: 18}
+
+        temp = segm.clone()
+        for k, v in label_mapping.items():
+            segm[temp == k] = v
+        return segm
+
+    if 'cityscapes' in odgt.lower():
+        return convert_cityscapes_label
+    elif 'ade' in odgt.lower():
+        return convert_ade_label
+    else:
+        return lambda x: x
 
 
 def imresize(im, size, interp='bilinear'):
@@ -20,7 +59,7 @@ def imresize(im, size, interp='bilinear'):
 
 
 class BaseDataset(torch.utils.data.Dataset):
-    def __init__(self, odgt, opt, **kwargs):
+    def __init__(self, opt, odgt, **kwargs):
         # parse options
         self.imgSizes = opt.imgSizes
         self.imgMaxSize = opt.imgMaxSize
@@ -34,6 +73,8 @@ class BaseDataset(torch.utils.data.Dataset):
         self.normalize = transforms.Normalize(
             mean=[0.485, 0.456, 0.406],
             std=[0.229, 0.224, 0.225])
+
+        self.convert_label = get_convert_label_fn(odgt)
 
     def parse_input_list(self, odgt, max_sample=-1, start_idx=-1, end_idx=-1):
         if isinstance(odgt, list):
@@ -50,27 +91,30 @@ class BaseDataset(torch.utils.data.Dataset):
         assert self.num_sample > 0
         print('# samples: {}'.format(self.num_sample))
 
+
     def img_transform(self, img):
-        # 0-255 to 0-1
+        # transform image from 0-255 to 0-1, normalize, to tensor
         img = np.float32(np.array(img)) / 255.
         img = img.transpose((2, 0, 1))
         img = self.normalize(torch.from_numpy(img.copy()))
         return img
 
     def segm_transform(self, segm):
-        # to tensor, -1 to 149
-        segm = torch.from_numpy(np.array(segm)).long() - 1
+        # transform segm label to tensor
+        segm = torch.from_numpy(np.array(segm)).long()
+        # convert/map labels to expected range
+        segm = self.convert_label(segm)
         return segm
 
-    # Round x to the nearest multiple of p and x' >= x
     def round2nearest_multiple(self, x, p):
+        # Round x to the nearest multiple of p and x' >= x
         return ((x - 1) // p + 1) * p
 
 
 class TrainDataset(BaseDataset):
-    def __init__(self, root_dataset, odgt, opt, batch_per_gpu=1, **kwargs):
-        super(TrainDataset, self).__init__(odgt, opt, **kwargs)
-        self.root_dataset = root_dataset
+    def __init__(self, opt, odgt, batch_per_gpu=1, **kwargs):
+        super(TrainDataset, self).__init__(opt, odgt, **kwargs)
+        self.root_dataset = opt.root_dataset
         # down sampling rate of segm labe
         self.segm_downsampling_rate = opt.segm_downsampling_rate
         self.batch_per_gpu = batch_per_gpu
@@ -81,6 +125,26 @@ class TrainDataset(BaseDataset):
         # override dataset length when trainig with batch_per_gpu > 1
         self.cur_idx = 0
         self.if_shuffled = False
+
+    def augment(self, img, segm):
+        # data augmentation for training
+
+        # random flip
+        if np.random.choice([0, 1]):
+            img = img.transpose(Image.FLIP_LEFT_RIGHT)
+            segm = segm.transpose(Image.FLIP_LEFT_RIGHT)
+
+        # random blur
+        # if np.random.choice([0, 1]):
+        #     img.filter(ImageFilter.GaussianBlur(radius=5))
+
+        # random rotate
+        if np.random.choice([0, 1]):
+            angle = 20 * (np.random.random() - 0.5)
+            img = img.rotate(angle, resample=Image.BICUBIC)
+            segm = segm.rotate(angle, resample=Image.NEAREST)
+
+        return img, segm
 
     def _get_sub_batch(self):
         while True:
@@ -119,7 +183,8 @@ class TrainDataset(BaseDataset):
 
         # resize all images' short edges to the chosen size
         if isinstance(self.imgSizes, list) or isinstance(self.imgSizes, tuple):
-            this_short_size = np.random.choice(self.imgSizes)
+            # this_short_size = np.random.choice(self.imgSizes)
+            this_short_size = np.random.randint(min(self.imgSizes), max(self.imgSizes)+1)
         else:
             this_short_size = self.imgSizes
 
@@ -163,10 +228,8 @@ class TrainDataset(BaseDataset):
             assert(img.size[0] == segm.size[0])
             assert(img.size[1] == segm.size[1])
 
-            # random_flip
-            if np.random.choice([0, 1]):
-                img = img.transpose(Image.FLIP_LEFT_RIGHT)
-                segm = segm.transpose(Image.FLIP_LEFT_RIGHT)
+            # augmentation
+            img, segm = self.augment(img, segm)
 
             # note that each sample within a mini batch has different scale param
             img = imresize(img, (batch_widths[i], batch_heights[i]), interp='bilinear')
@@ -204,9 +267,9 @@ class TrainDataset(BaseDataset):
 
 
 class ValDataset(BaseDataset):
-    def __init__(self, root_dataset, odgt, opt, **kwargs):
-        super(ValDataset, self).__init__(odgt, opt, **kwargs)
-        self.root_dataset = root_dataset
+    def __init__(self, opt, odgt, **kwargs):
+        super(ValDataset, self).__init__(opt, odgt, **kwargs)
+        self.root_dataset = opt.root_dataset
 
     def __getitem__(self, index):
         this_record = self.list_sample[index]
@@ -256,8 +319,8 @@ class ValDataset(BaseDataset):
 
 
 class TestDataset(BaseDataset):
-    def __init__(self, odgt, opt, **kwargs):
-        super(TestDataset, self).__init__(odgt, opt, **kwargs)
+    def __init__(self, opt, odgt, **kwargs):
+        super(TestDataset, self).__init__(opt, odgt, **kwargs)
 
     def __getitem__(self, index):
         this_record = self.list_sample[index]

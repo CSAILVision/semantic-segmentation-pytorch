@@ -112,8 +112,8 @@ def main(cfg, gpu):
 
     # Dataset and Loader
     dataset_test = TestDataset(
-        cfg.list_test,
-        cfg.DATASET)
+        opt=cfg.DATASET,
+        odgt=cfg.list_test)
     loader_test = torch.utils.data.DataLoader(
         dataset_test,
         batch_size=cfg.TEST.batch_size,

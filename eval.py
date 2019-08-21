@@ -125,9 +125,8 @@ def main(cfg, gpu):
 
     # Dataset and Loader
     dataset_val = ValDataset(
-        cfg.DATASET.root_dataset,
-        cfg.DATASET.list_val,
-        cfg.DATASET)
+        opt=cfg.DATASET,
+        odgt=cfg.DATASET.list_val)
     loader_val = torch.utils.data.DataLoader(
         dataset_val,
         batch_size=cfg.VAL.batch_size,
