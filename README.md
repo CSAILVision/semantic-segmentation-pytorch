@@ -1,6 +1,6 @@
 # Semantic Segmentation on MIT ADE20K dataset in PyTorch
 
-This is a PyTorch implementation of semantic segmentation models on MIT ADE20K scene parsing dataset.
+This is a PyTorch implementation of semantic segmentation models on MIT ADE20K scene parsing dataset. (Cityscapes and custom datasets are now supported!)
 
 ADE20K is the largest open source dataset for semantic segmentation and scene parsing, released by MIT Computer Vision team. Follow the link below to find the repository for our dataset and implementations on Caffe and Torch7:
 https://github.com/CSAILVision/sceneparsing
@@ -18,6 +18,7 @@ Color encoding of semantic categories can be found here:
 https://docs.google.com/spreadsheets/d/1se8YEtb2detS7OuPE86fXGyD269pMycAWe2mtKUj2W8/edit?usp=sharing
 
 ## Updates
+- Cityscapes and custom datasets are now supported.
 - HRNet model is now supported.
 - We use configuration files to store most options which were in argument parser. The definitions of options are detailed in ```config/defaults.py```.
 - We conform to Pytorch practice in data preprocessing (RGB [0, 1], substract mean, divide std).
@@ -190,11 +191,6 @@ python3 train.py --gpus $GPUS --cfg $CFG
 
 For example, you can start with our provided configurations: 
 
-* Train MobileNetV2dilated + C1_deepsup
-```bash
-python3 train.py --gpus GPUS --cfg config/ade20k-mobilenetv2dilated-c1_deepsup.yaml
-```
-
 * Train ResNet50dilated + PPM_deepsup
 ```bash
 python3 train.py --gpus GPUS --cfg config/ade20k-resnet50dilated-ppm_deepsup.yaml
@@ -213,11 +209,6 @@ python3 train.py --gpus GPUS --cfg config/ade20k-resnet101-upernet.yaml
 
 For example:
 
-* Evaluate MobileNetV2dilated + C1_deepsup
-```bash
-python3 eval_multipro.py --gpus GPUS --cfg config/ade20k-mobilenetv2dilated-c1_deepsup.yaml
-```
-
 * Evaluate ResNet50dilated + PPM_deepsup
 ```bash
 python3 eval_multipro.py --gpus GPUS --cfg config/ade20k-resnet50dilated-ppm_deepsup.yaml
@@ -227,6 +218,52 @@ python3 eval_multipro.py --gpus GPUS --cfg config/ade20k-resnet50dilated-ppm_dee
 ```bash
 python3 eval_multipro.py --gpus GPUS --cfg config/ade20k-resnet101-upernet.yaml
 ```
+
+## Other datasets
+### Cityscapes
+1. Download Cityscapes dataset (https://www.cityscapes-dataset.com/), and organize the data in the following structure:
+```
+data
+├── cityscapes
+│   ├── gtFine
+│   │   ├── test
+│   │   ├── train
+│   │   └── val
+│   └── leftImg8bit
+│       ├── test
+│       ├── train
+│       └── val
+```
+2. Train and evaluate model with the following scripts:
+```
+# Train on Cityscapes
+python train.py --cfg=config/cityscapes-resnet50dilated-ppm_deepsup.yaml
+# Evaluate on Cityscapes
+python eval_multipro.py --cfg=config/cityscapes-resnet50dilated-ppm_deepsup.yaml
+```
+3. Performance *(coming soon!)
+<table><tbody>
+    <th valign="bottom">Architecture</th>
+    <th valign="bottom">MultiScale Testing</th>
+    <th valign="bottom">Mean IoU</th>
+    <th valign="bottom">Pixel Accuracy(%)</th>
+    <th valign="bottom">Overall Score</th>
+    <th valign="bottom">Inference Speed(fps)</th>
+    <tr>
+        <td rowspan="2">ResNet50dilated + PPM_deepsup</td>
+        <td>No</td><td>-</td><td>-</td><td>-</td>
+        <td>-</td>
+    </tr>
+    <tr>
+        <td>Yes</td><td>-</td><td>-</td><td>-</td>
+        <td>-</td>
+    </tr>
+</tbody></table>
+
+### Custom datasets
+1. Prepare your dataset and create index files (*_train.odgt, *_val.odgt);
+2. Make a custom configuration file in confg/*.yaml;
+3. Define custom ```conver_label_fn``` in ```dataset.py```.
 
 ## Reference
 
