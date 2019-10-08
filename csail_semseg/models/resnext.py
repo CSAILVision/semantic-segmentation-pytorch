@@ -1,7 +1,7 @@
 import torch.nn as nn
 import math
 from .utils import load_url
-from lib.nn import SynchronizedBatchNorm2d
+from csail_semseg.lib.nn import SynchronizedBatchNorm2d
 BatchNorm2d = SynchronizedBatchNorm2d
 
 
