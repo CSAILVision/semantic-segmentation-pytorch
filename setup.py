@@ -23,6 +23,7 @@ setuptools.setup(
         'torchvision',
         'opencv-python',
         'yacs',
+        'scipy',
         'tqdm'
     ]
 )
