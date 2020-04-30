@@ -1,6 +1,6 @@
 # Semantic Segmentation on MIT ADE20K dataset in PyTorch
 
-This is a PyTorch implementation of semantic segmentation models on MIT ADE20K scene parsing dataset.
+This is a PyTorch implementation of semantic segmentation models on MIT ADE20K scene parsing dataset (http://sceneparsing.csail.mit.edu/).
 
 ADE20K is the largest open source dataset for semantic segmentation and scene parsing, released by MIT Computer Vision team. Follow the link below to find the repository for our dataset and implementations on Caffe and Torch7:
 https://github.com/CSAILVision/sceneparsing
