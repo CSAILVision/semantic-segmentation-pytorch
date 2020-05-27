@@ -141,7 +141,7 @@ if __name__ == '__main__':
         "--imgs",
         required=True,
         type=str,
-        help="an image paths, or a directory name"
+        help="an image path, or a directory name"
     )
     parser.add_argument(
         "--cfg",
