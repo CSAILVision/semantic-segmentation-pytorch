@@ -228,6 +228,19 @@ python3 eval_multipro.py --gpus GPUS --cfg config/ade20k-resnet50dilated-ppm_dee
 python3 eval_multipro.py --gpus GPUS --cfg config/ade20k-resnet101-upernet.yaml
 ```
 
+## Integration with other projects
+This library can be installed via `pip` to easily integrate with another codebase
+```bash
+pip install git+https://github.com/CSAILVision/semantic-segmentation-pytorch.git@master
+```
+
+Now this library can easily be consumed programmatically. For example
+```python
+from mit_semseg.config import cfg
+from mit_semseg.dataset import TestDataset
+from mit_semseg.models import ModelBuilder, SegmentationModule
+```
+
 ## Reference
 
 If you find the code or pre-trained models useful, please cite the following papers:

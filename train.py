@@ -9,11 +9,11 @@ from distutils.version import LooseVersion
 import torch
 import torch.nn as nn
 # Our libs
-from config import cfg
-from dataset import TrainDataset
-from models import ModelBuilder, SegmentationModule
-from utils import AverageMeter, parse_devices, setup_logger
-from lib.nn import UserScatteredDataParallel, user_scattered_collate, patch_replication_callback
+from mit_semseg.config import cfg
+from mit_semseg.dataset import TrainDataset
+from mit_semseg.models import ModelBuilder, SegmentationModule
+from mit_semseg.utils import AverageMeter, parse_devices, setup_logger
+from mit_semseg.lib.nn import UserScatteredDataParallel, user_scattered_collate, patch_replication_callback
 
 
 # train one epoch
