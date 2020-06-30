@@ -33,10 +33,10 @@ TRAIN:
 
 VAL:
   visualize: False
-  checkpoint: "epoch_40.pth"
+  checkpoint: "epoch_50.pth"
 
 TEST:
-  checkpoint: "epoch_40.pth"
+  checkpoint: "epoch_50.pth"
   result: "./"
 
 DIR: "ckpt/ade20k-resnet101-upernet"
