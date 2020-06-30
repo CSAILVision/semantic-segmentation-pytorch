@@ -141,7 +141,7 @@ if __name__ == '__main__':
         "--imgs",
         required=True,
         type=str,
-        help="an image paths, or a directory name"
+        help="an image path, or a directory name"
     )
     parser.add_argument(
         "--cfg",
@@ -185,8 +185,8 @@ if __name__ == '__main__':
         os.path.exists(cfg.MODEL.weights_decoder), "checkpoint does not exitst!"
 
     # generate testing image list
-    if os.path.isdir(args.imgs[0]):
-        imgs = find_recursive(args.imgs[0])
+    if os.path.isdir(args.imgs):
+        imgs = find_recursive(args.imgs)
     else:
         imgs = [args.imgs]
     assert len(imgs), "imgs should be a path to image (.jpg) or directory."
