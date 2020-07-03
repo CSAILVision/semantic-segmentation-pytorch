@@ -23,6 +23,9 @@ if [ ! -e $TEST_IMG ]; then
   wget -P $RESULT_PATH http://sceneparsing.csail.mit.edu/data/ADEChallengeData2016/images/validation/$TEST_IMG
 fi
 
+if [ -z "$DOWNLOAD_ONLY" ]
+then
+
 # Inference
 python3 -u test.py \
   --imgs $TEST_IMG \
@@ -30,3 +33,5 @@ python3 -u test.py \
   DIR $MODEL_PATH \
   TEST.result ./ \
   TEST.checkpoint epoch_20.pth
+
+fi
