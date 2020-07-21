@@ -340,6 +340,10 @@ class C1DeepSup(nn.Module):
         deepsup = self.cbr_deepsup(conv4)
         deepsup = self.conv_last_deepsup(deepsup)
 
+        if segSize is not None:
+            deepsup = nn.functional.interpolate(
+                deepsup, size=segSize, mode='bilinear', align_corners=False)
+
         return dict(logits=x, deepsup_logits=deepsup)
 
 
@@ -459,6 +463,10 @@ class PPMDeepsup(nn.Module):
         deepsup = self.cbr_deepsup(conv4)
         deepsup = self.dropout_deepsup(deepsup)
         deepsup = self.conv_last_deepsup(deepsup)
+
+        if segSize is not None:
+            deepsup = nn.functional.interpolate(
+                deepsup, size=segSize, mode='bilinear', align_corners=False)
 
         return dict(logits=x, deepsup_logits=deepsup)
 
