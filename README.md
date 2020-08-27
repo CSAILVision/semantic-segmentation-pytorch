@@ -7,6 +7,8 @@ https://github.com/CSAILVision/sceneparsing
 
 If you simply want to play with our demo, please try this link: http://scenesegmentation.csail.mit.edu You can upload your own photo and parse it!
 
+[You can also use this colab notebook playground here](https://colab.research.google.com/github/CSAILVision/semantic-segmentation-pytorch/blob/master/notebooks/DemoSegmenter.ipynb) to tinker with the code for segmenting an image.
+
 All pretrained models can be found at:
 http://sceneparsing.csail.mit.edu/model/pytorch
 
