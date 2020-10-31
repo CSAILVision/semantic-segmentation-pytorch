@@ -10,7 +10,7 @@ DATASET:
   random_flip: True
 
 MODEL:
-  arch_encoder: "resnet50dilated"
+  arch_encoder: "resnet101dilated"
   arch_decoder: "ppm_deepsup"
   fc_dim: 2048
 
@@ -39,4 +39,4 @@ TEST:
   checkpoint: "epoch_25.pth"
   result: "./"
 
-DIR: "ckpt/ade20k-resnet50dilated-ppm_deepsup"
+DIR: "ckpt/ade20k-resnet101dilated-ppm_deepsup"
