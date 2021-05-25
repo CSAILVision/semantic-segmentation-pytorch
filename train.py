@@ -161,7 +161,7 @@ def main(cfg, gpus):
             net_encoder, net_decoder, crit)
 
     # Dataset and Loader
-    dataset_train = TrainDataset(
+    dataset_train = TrainDataset(       # select trian index
         cfg.DATASET.root_dataset,
         cfg.DATASET.list_train,
         cfg.DATASET,
