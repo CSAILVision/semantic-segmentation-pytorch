@@ -6,8 +6,8 @@ MODEL_NAME=ade20k-resnet50dilated-ppm_deepsup
 MODEL_PATH=ckpt/$MODEL_NAME
 RESULT_PATH=./
 
-ENCODER=$MODEL_NAME/encoder_epoch_20.pth
-DECODER=$MODEL_NAME/decoder_epoch_20.pth
+ENCODER=$MODEL_PATH/encoder_epoch_20.pth
+DECODER=$MODEL_PATH/decoder_epoch_20.pth
 
 # Download model weights and image
 if [ ! -e $MODEL_PATH ]; then
