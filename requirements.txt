@@ -3,7 +3,7 @@ numpy
 scipy
 torch==1.12.1+cpu
 torchvision==0.13.1+cpu
-opencv3
+opencv-python
 yacs
 tqdm
 aiohttp
