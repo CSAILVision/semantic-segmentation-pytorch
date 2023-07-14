@@ -1,7 +1,8 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 numpy
 scipy
-pytorch==0.4.1
-torchvision
+torch==1.12.1+cpu
+torchvision==0.13.1+cpu
 opencv3
 yacs
 tqdm
