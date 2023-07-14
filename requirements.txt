@@ -10,3 +10,4 @@ aiohttp
 aiofiles
 aiohttp_cors
 pillow
+gdown
