@@ -6,3 +6,8 @@ torchvision==0.13.1+cpu
 opencv3
 yacs
 tqdm
+aiohttp
+aiofiles
+aiohttp_cors
+scipy==1.9.1
+pillow
