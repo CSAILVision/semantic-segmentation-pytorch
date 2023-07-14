@@ -11,3 +11,6 @@ aiofiles
 aiohttp_cors
 pillow
 gdown
+uvicorn
+fastapi
+python-multipart
