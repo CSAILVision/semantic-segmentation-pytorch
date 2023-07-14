@@ -164,7 +164,7 @@ The code is developed under the following configurations.
 - Hardware: >=4 GPUs for training, >=1 GPU for testing (set ```[--gpus GPUS]``` accordingly)
 - Software: Ubuntu 16.04.3 LTS, ***CUDA>=8.0, Python>=3.5, PyTorch>=0.4.0***
 - Dependencies: numpy, scipy, opencv, yacs, tqdm
-- gdown https://drive.google.com/file/d/1Il1Pcb13syeHi9LA9KjXz8KqMFN9izgo
+- gdown https://drive.google.com/file/d/1Il1Pcb13syeHi9LA9KjXz8KqMFN9izgo -O ckpt.zip
 - unzip -j ckpt.zip
 
 ## Quick start: Test on an image using our trained model 
