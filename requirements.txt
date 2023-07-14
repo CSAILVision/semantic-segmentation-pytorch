@@ -9,5 +9,4 @@ tqdm
 aiohttp
 aiofiles
 aiohttp_cors
-scipy==1.9.1
 pillow
