@@ -35,3 +35,5 @@ python3 -u test.py \
   TEST.checkpoint epoch_20.pth
 
 fi
+# MODEL_NAME=ade20k-hrnetv2-c1
+# python3 -u test_cpu.py --imgs ADE_val_00001519.jpg --cfg config/ade20k-hrnetv2.yaml

@@ -1,7 +1,16 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 numpy
 scipy
-pytorch==0.4.1
-torchvision
-opencv3
+torch==1.12.1+cpu
+torchvision==0.13.1+cpu
+opencv-python
 yacs
 tqdm
+aiohttp
+aiofiles
+aiohttp_cors
+pillow
+gdown
+uvicorn[standard]
+fastapi
+python-multipart
