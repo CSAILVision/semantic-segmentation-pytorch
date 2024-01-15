@@ -24,7 +24,7 @@ with open('data/object150_info.csv') as f:
     reader = csv.reader(f)
     next(reader)
     for row in reader:
-        names[int(row[0])] = row[5].split(";")[0]
+        names[int(row[0]) - 1] = row[5].split(";")[0]
 
 
 def visualize_result(data, pred, cfg):
