@@ -2,7 +2,7 @@
 import os
 import time
 import argparse
-from distutils.version import LooseVersion
+from packaging.version import Version
 # Numerical libs
 import numpy as np
 import torch
@@ -145,7 +145,7 @@ def main(cfg, gpu):
 
 
 if __name__ == '__main__':
-    assert LooseVersion(torch.__version__) >= LooseVersion('0.4.0'), \
+    assert Version(torch.__version__) >= Version('0.4.0'), \
         'PyTorch>=0.4.0 is required'
 
     parser = argparse.ArgumentParser(
